@@ -9,7 +9,7 @@
 <div id="app">
   <div id="sidebar">
     <div class="brand">
-      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.3</div></div>
     </div>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
       <svg class="moon"><use href="#ic-moon"/></svg>
@@ -55,8 +55,7 @@
   const lookupDebounce = {};
   let isSubmitting = false;
   let editMode = false;
-  let editCartonRows = [];
-  let editLogRows = [];
+  let editCartonRow = null;
   let editCartonRef = '';
 
   async function load() {
@@ -77,7 +76,6 @@
     const openLists = lists.filter(l => l.status === 'open');
     staffSelectedList = openLists.length > 0 ? openLists[0] : null;
 
-    // Check for pending edit from Reject List
     let pendingEdit = null;
     try {
       const peRaw = localStorage.getItem('mg_pending_edit');
@@ -122,15 +120,14 @@
 
   async function loadEditMode(pe) {
     editMode = true;
-    editCartonRows = pe.cartonRows || [];
-    editLogRows = pe.logRows || [];
+    editCartonRow = pe.row || null;
     formState.cartonId = pe.cartonId || '';
     try { toast('Loading carton data for editing...', 'success'); } catch(e) {}
     try {
       const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
       if (res && res.cartons && res.cartons.length > 0) {
         const carton = res.cartons[0];
-        editCartonRows = res.cartons.map(c => c.row).filter(Boolean);
+        editCartonRow = carton.row || pe.row || null;
         editCartonRef = carton.cartonRef || '';
         formState.cartonId = carton.cartonId || pe.cartonId || '';
         formState.cartonType = carton.cartonType || 'single';
@@ -138,7 +135,6 @@
         formState.cartonQty = carton.cartonQty || '1';
         if (carton.cartonInner !== undefined) formState.cartonInner = carton.cartonInner || '';
         if (carton.cartonOuter !== undefined) formState.cartonOuter = carton.cartonOuter || '';
-        // Convert stored boolean/string match values to form state values
         const toMatchState = (val, hasBc) => {
           if (val === true || val === 'true') return true;
           if (val === 'no') return 'no';
@@ -147,11 +143,9 @@
         };
         formState.cartonInnerMatch = toMatchState(carton.cartonInnerMatch, formState.cartonInner && formState.cartonInner !== 'NO');
         formState.cartonOuterMatch = toMatchState(carton.cartonOuterMatch, formState.cartonOuter && formState.cartonOuter !== 'NO');
-        // Photos
         if (carton.imgBagUrl) formState.cartonPhotos.allParts = carton.imgBagUrl;
         if (carton.imgInnerUrl) formState.cartonPhotos.innerBox = carton.imgInnerUrl;
         if (carton.imgCartonUrl) formState.cartonPhotos.cartonLabel = carton.imgCartonUrl;
-        // Parts
         if (carton.parts && carton.parts.length > 0) {
           formState.parts = carton.parts.map(p => {
             const hasBag = p.bag && p.bag !== 'NO';
@@ -520,8 +514,13 @@
     }
 
     const now = new Date().toISOString();
-    const nextRefRes = await gasGet({ action: 'nextCartonRef', listRef: staffSelectedList.listRef });
-    const cartonRef = (nextRefRes && nextRefRes.nextRef) ? nextRefRes.nextRef : 'CTN-001';
+    let cartonRef;
+    if (editMode && editCartonRef) {
+      cartonRef = editCartonRef;
+    } else {
+      const nextRefRes = await gasGet({ action: 'nextCartonRef', listRef: staffSelectedList.listRef });
+      cartonRef = (nextRefRes && nextRefRes.nextRef) ? nextRefRes.nextRef : 'CTN-001';
+    }
 
     let parts;
     if (isKit) {
@@ -529,47 +528,48 @@
       const kitQty = parseInt(formState.cartonQty) || 1;
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: kitPi, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
     } else {
-      // FIX: do NOT send photos inside parts — they are uploaded separately as imgBagUrl/imgInnerUrl/imgCartonUrl
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch) }));
     }
 
-    const submitCartonRef = editMode ? editCartonRef : cartonRef;
-    const cartonSaveData = { listRef: staffSelectedList.listRef, cartonRef: submitCartonRef, cartonId, cartonType: formState.cartonType, cartonPI: formState.cartonPi, cartonQty: formState.cartonQty, parts, imgBagUrl, imgInnerUrl, imgCartonUrl, createdAt: now, status: 'pending' };
-    if (isKit) { cartonSaveData.cartonInner = cleanBC(formState.cartonInner); cartonSaveData.cartonOuter = cleanBC(formState.cartonOuter); cartonSaveData.cartonInnerMatch = matchBool(formState.cartonInnerMatch); cartonSaveData.cartonOuterMatch = matchBool(formState.cartonOuterMatch); }
-    // In edit mode, update existing Carton sheet row(s) instead of creating new ones
-    if (editMode && editCartonRows.length > 0) {
-      for (const rowNum of editCartonRows) {
-        await gasPost({ action: 'saveCarton', ...cartonSaveData, row: rowNum });
-      }
-    } else {
-      await gasPost({ action: 'saveCarton', ...cartonSaveData });
+    const recordData = {
+      action: 'saveRecord',
+      row: editMode && editCartonRow ? editCartonRow : null,
+      listRef: staffSelectedList.listRef,
+      cartonRef: cartonRef,
+      cartonId: cartonId,
+      cartonType: formState.cartonType,
+      cartonPI: formState.cartonPi || (parts[0] && parts[0].pi) || '',
+      cartonQty: formState.cartonQty || (parts[0] && parts[0].qty) || '1',
+      customer: staffSelectedList.customer,
+      parts: parts,
+      imgBagUrl: imgBagUrl,
+      imgInnerUrl: imgInnerUrl,
+      imgCartonUrl: imgCartonUrl,
+      packedBy: staffSelectedList.createdBy,
+      packedDate: '',
+      createdAt: editMode ? undefined : now,
+      status: 'pending'
+    };
+
+    if (isKit) {
+      recordData.cartonInner = cleanBC(formState.cartonInner);
+      recordData.cartonOuter = cleanBC(formState.cartonOuter);
+      recordData.cartonInnerMatch = matchBool(formState.cartonInnerMatch);
+      recordData.cartonOuterMatch = matchBool(formState.cartonOuterMatch);
     }
 
-    // Submit to packing log
-    if (GAS_URL) {
-      try {
-        if (isKit) {
-          const allPartNos = parts.map(p => p.partNo).join(', ');
-          const combinedBag = parts.map(p => p.bag).filter(Boolean).join(', ') || '';
-          await gasPost({ action: 'submit', cartonId, cartonRef: submitCartonRef, partNo: allPartNos, pi: formState.cartonPi || '', qty: formState.cartonQty || 1, bag: combinedBag, inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: true, innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch), imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
-        } else {
-          for (const part of parts) {
-            await gasPost({ action: 'submit', cartonId, cartonRef: submitCartonRef, partNo: part.partNo, pi: part.pi, qty: part.qty, bag: part.bag, inner: part.inner, outer: part.outer, bagMatch: part.bagMatch, innerMatch: part.innerMatch, outerMatch: part.outerMatch, imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
-          }
-        }
-      } catch(e) { console.warn('Log submit warning:', e); }
+    const res = await gasPost(recordData);
+    if (!res || !res.success) {
+      toast('Save failed: ' + (res?.error || 'Unknown error'), 'error');
+      isSubmitting = false;
+      setButtonLoading('btn-submit', false);
+      return;
     }
 
-    // If in edit mode, delete old rejected LOG rows to prevent duplicates
     const wasEditMode = editMode;
-    if (editMode && editLogRows.length > 0) {
-      try { await gasPost({ action: 'deleteLogRows', rows: editLogRows }); } catch(e) { console.warn('Failed to clean up old log rows:', e); }
-    }
-
     resetForm();
     editMode = false;
-    editCartonRows = [];
-    editLogRows = [];
+    editCartonRow = null;
     editCartonRef = '';
     renderForm();
     toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
