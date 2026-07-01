@@ -8,7 +8,7 @@
 <div id="app">
   <div id="sidebar">
     <div class="brand">
-      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.3</div></div>
     </div>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
       <svg class="moon"><use href="#ic-moon"/></svg>
@@ -59,19 +59,17 @@
   var LISTS = [];
 
   async function loadLists() {
-    // Show cached data immediately for fast perceived load
     let cached = [];
     try {
       const c = localStorage.getItem('mg_lists_cache');
       if (c) cached = JSON.parse(c);
-    } catch(e) {}
+    } catch(e){}
     if (cached.length > 0) {
       LISTS = cached;
       renderLists();
     }
-    // Fetch fresh data in background
     let fresh = null;
-    try { fresh = await gasGet({ action: 'packingLists' }); } catch(e) {}
+    try { fresh = await gasGet({ action: 'packingLists' }); } catch(e){}
     if (fresh && fresh.lists) {
       LISTS = fresh.lists;
       try { localStorage.setItem('mg_lists_cache', JSON.stringify(LISTS)); localStorage.setItem('mg_lists_cache_time', String(Date.now())); } catch(e){}
@@ -82,7 +80,7 @@
     }
   }
 
-    function renderLists() {
+  function renderLists() {
     document.getElementById('lists-count').textContent = LISTS.length + ' list' + (LISTS.length !== 1 ? 's' : '');
     const tbody = document.getElementById('lists-tbody');
     if (LISTS.length === 0) {
@@ -99,14 +97,12 @@
         <td data-label="Ref" class="font-bold text-primary">${escHtml(l.listRef)}</td>
         <td data-label="Customer">${escHtml(l.customer)}</td>
         <td data-label="Packed By"><div class="text-sm">${escHtml(l.createdBy)}</div><div class="text-xs text-muted">${escHtml(l.team)}</div></td>
-        <td data-label="Status"><span class="badge ${statusClass}">${l.status}</span></td>
+        <td data-label="Status"><span class="badge ${statusClass}">${escHtml(l.status)}</span></td>
         <td data-label="Created" class="text-xs text-muted">${fmtDate(l.createdAt)}</td>
         <td><svg style="width:14px;height:14px;color:var(--muted-fg)"><use href="#ic-arrow-right"/></svg></td>
       </tr>`;
     }).join('');
   }
-
-
 
   window.showCreateList = function() {
     const el = document.getElementById('create-list-form');
