@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Transfer Approval — MG Packing</title>
+<?!= include('shared'); ?>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="brand">
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
+      <svg class="moon"><use href="#ic-moon"/></svg>
+      <svg class="sun"><use href="#ic-sun"/></svg>
+    </button>
+    <div class="section-label">Staff</div>
+    <nav>
+      <a href="#" data-page="index" onclick="goTo('index');return false"><svg><use href="#ic-list"/></svg>Packing Lists</a>
+      <a href="#" data-page="staff" onclick="goTo('staff');return false"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
+    </nav>
+    <div class="section-label">Supervisor</div>
+    <nav>
+      <a href="#" data-page="checker" onclick="goTo('checker');return false"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
+      <a href="#" data-page="transfer" class="active"><svg><use href="#ic-transfer"/></svg>Transfer</a>
+      <a href="#" data-page="rejects" class="danger" onclick="goTo('rejects');return false"><svg><use href="#ic-alert"/></svg>Reject List</a>
+    </nav>
+    <div class="section-label">Tools</div>
+    <nav>
+      <a href="#" data-page="missing" onclick="goTo('missing');return false"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
+    </nav>
+    <div style="flex:1"></div>
+  </div>
+  <div id="main">
+    <div id="transfer-content"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  initSidebar('transfer');
+
+  let transferAuthenticated = false;
+  let transferDataMap = {};
+  let isSubmitting = false;
+
+  function showGate() {
+    document.getElementById('transfer-content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title"><svg style="color:var(--primary)"><use href="#ic-transfer"/></svg>Transfer Approval</div><div class="page-subtitle">Manager approval required.</div></div>
+    </div>
+    <div class="password-gate">
+      <div class="password-gate-inner">
+        <svg class="password-gate-icon" style="margin:0 auto 20px;display:block"><use href="#ic-lock"/></svg>
+        <div class="password-gate-title">Transfer Approval</div>
+        <div class="password-gate-sub">This page is password protected. Enter manager password to access.</div>
+        <button class="btn btn-primary btn-full" onclick="checkPw()"><svg><use href="#ic-unlock"/></svg>Enter Password</button>
+      </div>
+    </div>`;
+  }
+
+  window.checkPw = function() {
+    const pw = prompt('ENTER MANAGER PASSWORD:');
+    if (pw === 'simon1981') { transferAuthenticated = true; loadTransfer(); }
+    else { toast('Incorrect password', 'error'); }
+  };
+
+  async function loadTransfer() {
+    let reqs = [];
+    try { const res = await gasGet({ action: 'transfers' }); if (res && res.transfers) reqs = res.transfers; } catch(e) {}
+    transferDataMap = {};
+    reqs.forEach(r => { if (r.row) transferDataMap[r.row] = r; });
+
+    const pending = reqs.filter(r => r.status === 'pending').length;
+    const approved = reqs.filter(r => r.status === 'approved').length;
+    const rejected = reqs.filter(r => r.status === 'rejected').length;
+
+    document.getElementById('transfer-content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title"><svg style="color:var(--primary)"><use href="#ic-transfer"/></svg>Transfer Approval</div><div class="page-subtitle">Review and approve carton transfer requests.</div></div>
+      <div class="gap-8">
+        <button class="btn btn-outline btn-sm" onclick="transferAuthenticated=false;showGate();"><svg><use href="#ic-lock"/></svg>Lock</button>
+        <button class="btn btn-outline btn-sm" onclick="loadTransfer()"><svg><use href="#ic-refresh"/></svg>Refresh</button>
+      </div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:20px">
+      <div class="stat-card"><div class="label">Total</div><div class="value">${reqs.length}</div></div>
+      <div class="stat-card"><div class="label" style="color:var(--amber)">Pending</div><div class="value" style="color:var(--amber)">${pending}</div></div>
+      <div class="stat-card"><div class="label" style="color:var(--green)">Approved</div><div class="value" style="color:var(--green)">${approved}</div></div>
+      <div class="stat-card"><div class="label" style="color:var(--danger)">Rejected</div><div class="value text-danger">${rejected}</div></div>
+    </div>
+    ${reqs.length === 0 ? '<div class="empty-state"><svg><use href="#ic-transfer"/></svg><p>No transfer requests yet</p></div>' :
+      '<div style="display:flex;flex-direction:column;gap:12px">' + reqs.map(r => {
+        const isPending = r.status === 'pending';
+        const isApproved = r.status === 'approved';
+        return `<div class="record-card ${isPending ? '' : isApproved ? 'approved' : 'rejected'}" style="border-left:4px solid ${isPending ? 'var(--amber)' : isApproved ? 'var(--green)' : 'var(--danger)'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div><div style="font-weight:800;font-size:1.05rem">${escHtml(r.transferId)}</div><div class="text-xs text-muted">By ${escHtml(r.requestedBy)} \u2014 ${fmtDate(r.requestedAt)}</div></div>
+            <span class="badge ${isPending ? 'badge-amber' : isApproved ? 'badge-green' : 'badge-red'}">${r.status.toUpperCase()}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;font-size:12px">
+            <div style="background:var(--muted);padding:10px;border-radius:8px"><div class="text-xs text-muted">From</div><div class="font-bold">${escHtml(r.fromListRef)}</div></div>
+            <div style="background:var(--muted);padding:10px;border-radius:8px"><div class="text-xs text-muted">To</div><div class="font-bold">${escHtml(r.toListRef)}</div><div class="text-xs">Prefix: <strong>${escHtml(r.newPrefix)}</strong></div></div>
+          </div>
+          <div style="font-size:12px;margin-bottom:10px"><strong>Cartons (${r.cartons.length}):</strong> ${r.cartons.map(c => '<span class="badge badge-muted" style="margin:2px">' + escHtml(c.cartonId) + '</span>').join('')}</div>
+          <div style="background:var(--amber-dim);padding:10px;border-radius:8px;font-size:12px;margin-bottom:10px"><strong>Reason:</strong> ${escHtml(r.reason)}</div>
+          ${r.rejectReason ? '<div class="alert alert-danger" style="margin-bottom:10px;font-size:12px"><strong>Rejected:</strong> ' + escHtml(r.rejectReason) + '</div>' : ''}
+          ${isApproved ? '<div style="font-size:12px;color:var(--green)"><strong>Approved by:</strong> ' + escHtml(r.approvedBy) + ' \u2014 ' + fmtDate(r.approvedAt) + '</div>' : ''}
+          ${isPending ? `<div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-green" style="flex:1" id="btn-approve-${r.row}" onclick="approveTransfer(${r.row})"><svg><use href="#ic-check"/></svg>Approve</button>
+            <button class="btn btn-danger-outline" style="flex:1" id="btn-reject-${r.row}" onclick="rejectTransfer(${r.row})"><svg><use href="#ic-file-x"/></svg>Reject</button>
+          </div>` : ''}
+        </div>`;
+      }).join('') + '</div>'}`;
+  }
+
+  window.approveTransfer = async function(transferRow) {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    setButtonLoading('btn-approve-' + transferRow, true);
+    const manager = prompt('ENTER MANAGER NAME TO APPROVE:');
+    if (!manager) { isSubmitting = false; setButtonLoading('btn-approve-' + transferRow, false); return; }
+    const transferData = transferDataMap[transferRow];
+    const cartonRows = transferData ? (transferData.cartons || []).map(c => c.row).filter(Boolean) : [];
+    const cartonIds = transferData ? (transferData.cartons || []).map(c => c.cartonId).filter(Boolean) : [];
+    const toListRef = transferData ? transferData.toListRef : '';
+    try {
+      const res = await gasPost({ action: 'approveTransfer', transferRow, manager: manager.toUpperCase(), cartonRows, cartonIds, toListRef });
+      if (res && res.success) { toast('Transfer approved. New list: ' + (res.toListRef || toListRef), 'success'); try { await gasPost({ action: 'resetTransferStatus', cartonRows: cartonRows || [], cartonIds: cartonIds || [] }); } catch(e) {} isSubmitting = false; loadTransfer(); }
+      else { throw new Error(res?.error || 'Unknown error'); }
+    } catch(e) { isSubmitting = false; setButtonLoading('btn-approve-' + transferRow, false); toast('Approve failed: ' + e.message, 'error'); }
+  };
+
+  window.rejectTransfer = async function(transferRow) {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    setButtonLoading('btn-reject-' + transferRow, true);
+    const manager = prompt('ENTER MANAGER NAME TO REJECT:');
+    if (!manager) { isSubmitting = false; setButtonLoading('btn-reject-' + transferRow, false); return; }
+    const reason = prompt('ENTER REJECTION REASON:');
+    if (!reason) { isSubmitting = false; setButtonLoading('btn-reject-' + transferRow, false); return; }
+    try {
+      const res = await gasPost({ action: 'rejectTransfer', transferRow, manager: manager.toUpperCase(), reason: reason.toUpperCase() });
+      if (res && res.success) { isSubmitting = false; toast('Transfer rejected', 'error'); loadTransfer(); }
+      else { throw new Error(); }
+    } catch(e) { isSubmitting = false; setButtonLoading('btn-reject-' + transferRow, false); toast('Reject failed', 'error'); }
+  };
+
+  if (transferAuthenticated) loadTransfer(); else showGate();
+})();
+</script>
+</body>
+</html>

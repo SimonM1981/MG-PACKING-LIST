@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checker View — MG Packing</title>
+<?!= include('shared'); ?>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="brand">
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
+      <svg class="moon"><use href="#ic-moon"/></svg>
+      <svg class="sun"><use href="#ic-sun"/></svg>
+    </button>
+    <div class="section-label">Staff</div>
+    <nav>
+      <a href="#" data-page="index" onclick="goTo('index');return false"><svg><use href="#ic-list"/></svg>Packing Lists</a>
+      <a href="#" data-page="staff" onclick="goTo('staff');return false"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
+    </nav>
+    <div class="section-label">Supervisor</div>
+    <nav>
+      <a href="#" data-page="checker" class="active"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
+      <a href="#" data-page="transfer" onclick="goTo('transfer');return false"><svg><use href="#ic-transfer"/></svg>Transfer</a>
+      <a href="#" data-page="rejects" class="danger" onclick="goTo('rejects');return false"><svg><use href="#ic-alert"/></svg>Reject List</a>
+    </nav>
+    <div class="section-label">Tools</div>
+    <nav>
+      <a href="#" data-page="missing" onclick="goTo('missing');return false"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
+    </nav>
+    <div style="flex:1"></div>
+  </div>
+  <div id="main">
+    <div id="checker-content">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><svg><use href="#ic-check-sq"/></svg>Checker View</div>
+          <div class="page-subtitle">Review submissions and approve or reject.</div>
+        </div>
+      </div>
+      <div id="checker-stats" class="stat-grid" style="margin-bottom:20px"></div>
+      <div id="checker-table-wrap"><div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading records...</p></div></div>
+    </div>
+    <div id="checker-modal-wrap"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  initSidebar('checker');
+
+  let checkerAuthenticated = false;
+  let checkerRecords = [];
+  let currentRecord = null;
+  let selectedVerdict = null;
+  const recordCache = new Map();
+  let isSubmitting = false;
+
+  function showPasswordGate() {
+    document.getElementById('checker-content').innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title"><svg style="color:var(--primary)"><use href="#ic-check-sq"/></svg>Checker View</div><div class="page-subtitle">Password protected.</div></div>
+    </div>
+    <div class="password-gate">
+      <div class="password-gate-inner">
+        <svg class="password-gate-icon" style="margin:0 auto 20px;display:block"><use href="#ic-lock"/></svg>
+        <div class="password-gate-title">Checker Access</div>
+        <div class="password-gate-sub">Enter password to access the checker view.</div>
+        <div style="display:flex;gap:8px">
+          <input type="password" id="checker-pw" placeholder="Password..." style="flex:1" onkeydown="if(event.key==='Enter')checkPassword()" />
+          <button class="btn btn-primary" onclick="checkPassword()">Enter</button>
+        </div>
+        <div id="checker-pw-error" style="color:var(--danger);font-size:12px;margin-top:10px;font-weight:600;display:none">Incorrect password.</div>
+      </div>
+    </div>`;
+  }
+
+  window.checkPassword = function() {
+    const pw = document.getElementById('checker-pw')?.value || '';
+    if (pw === 'MG2026') { checkerAuthenticated = true; loadChecker(); }
+    else { const err = document.getElementById('checker-pw-error'); if (err) err.style.display = ''; const input = document.getElementById('checker-pw'); if (input) { input.value = ''; input.focus(); } }
+  };
+
+  async function loadChecker() {
+    document.getElementById('checker-content').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title"><svg><use href="#ic-check-sq"/></svg>Checker View</div>
+        <div class="page-subtitle">Review submissions and approve or reject.</div>
+      </div>
+      <div class="gap-8">
+        <div class="search-wrap">
+          <svg><use href="#ic-search"/></svg>
+          <input type="text" id="checker-search" placeholder="Search customer, carton, part, PI..." style="width:200px" oninput="renderTable()" />
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadChecker()"><svg><use href="#ic-refresh"/></svg>Refresh</button>
+        <button class="btn btn-outline btn-sm" onclick="checkerAuthenticated=false;showPasswordGate();"><svg><use href="#ic-lock"/></svg>Lock</button>
+      </div>
+    </div>
+    <div id="checker-stats" class="stat-grid" style="margin-bottom:20px"></div>
+    <div id="checker-table-wrap"><div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading records...</p></div></div>`;
+
+    checkerRecords = [];
+    try { const res = await gasGet({ action: 'recordsByStatus', filter: 'all', limit: '500' }); if (res && res.records) { checkerRecords = res.records; checkerRecords.forEach(r => { if (r.row) recordCache.set(r.row, r); }); } } catch(e) {}
+    renderStats();
+    renderTable();
+  }
+
+  function renderStats() {
+    const total = checkerRecords.length;
+    const pending = checkerRecords.filter(r => !r.status || r.status.toLowerCase() === '' || r.status.toLowerCase() === 'pending').length;
+    const approved = checkerRecords.filter(r => (r.status || '').toLowerCase().includes('verified')).length;
+    const rejected = checkerRecords.filter(r => (r.status || '').toLowerCase().includes('rejected')).length;
+    const el = document.getElementById('checker-stats');
+    if (el) el.innerHTML = `
+      <div class="stat-card"><svg class="icon"><use href="#ic-box"/></svg><div class="label">Total</div><div class="value">${total}</div></div>
+      <div class="stat-card"><svg class="icon" style="color:var(--amber)"><use href="#ic-clock"/></svg><div class="label" style="color:var(--amber)">Pending</div><div class="value" style="color:var(--amber)">${pending}</div></div>
+      <div class="stat-card"><svg class="icon" style="color:var(--green)"><use href="#ic-check"/></svg><div class="label" style="color:var(--green)">Approved</div><div class="value" style="color:var(--green)">${approved}</div></div>
+      <div class="stat-card"><svg class="icon" style="color:var(--danger)"><use href="#ic-alert"/></svg><div class="label" style="color:var(--danger)">Rejected</div><div class="value text-danger">${rejected}</div></div>`;
+  }
+
+  window.renderTable = function() {
+    const searchVal = document.getElementById('checker-search')?.value?.toLowerCase() || '';
+    let recs = checkerRecords;
+    if (searchVal) recs = recs.filter(r => (r.cartonId || '').toLowerCase().includes(searchVal) || (r.customer || '').toLowerCase().includes(searchVal) || (r.partNo || '').toLowerCase().includes(searchVal) || (r.packedBy || '').toLowerCase().includes(searchVal));
+
+    const wrap = document.getElementById('checker-table-wrap');
+    if (!wrap) return;
+    if (recs.length === 0) { wrap.innerHTML = '<div class="empty-state"><svg><use href="#ic-check-sq"/></svg><p>No records found</p></div>'; return; }
+
+    const groups = {};
+    for (const r of recs) { const key = (r.customer || 'unknown') + '|' + (r.cartonId || 'unknown'); if (!groups[key]) groups[key] = []; groups[key].push(r); }
+
+    wrap.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' + Object.values(groups).map(grecs => {
+      const first = grecs[0];
+      const partCount = grecs.length;
+      let isRejected = false, isApproved = false;
+      for (const r of grecs) { const s = (r.status || '').toLowerCase(); if (s.includes('rejected')) isRejected = true; else if (s.includes('verified')) isApproved = true; }
+      const statusColor = isRejected ? 'var(--danger)' : isApproved ? 'var(--primary)' : 'var(--amber)';
+      const statusText = isRejected ? 'REJECTED' : isApproved ? 'APPROVED' : 'PENDING';
+      const partNos = [...new Set(grecs.map(r => r.partNo).filter(Boolean))];
+      const totalQty = grecs.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
+      const bagOk = grecs.every(r => r.bagMatch === true || r.bagMatch === 'true' || String(r.bag || '') === '');
+      const innerOk = grecs.every(r => r.innerMatch === true || r.innerMatch === 'true' || String(r.inner || '') === '');
+      const outerOk = grecs.every(r => r.outerMatch === true || r.outerMatch === 'true' || String(r.outer || '') === '');
+      const rowNums = grecs.map(r => r.row).filter(Boolean).join(',');
+
+      const photos = [];
+      const seenUrls = new Set();
+      for (const r of grecs) { if (r.imgBagUrl && !seenUrls.has(r.imgBagUrl)) { seenUrls.add(r.imgBagUrl); photos.push({ url: r.imgBagUrl, lbl: partCount > 1 ? 'Bag (' + r.partNo + ')' : 'Bag' }); } if (r.imgInnerUrl && !seenUrls.has(r.imgInnerUrl)) { seenUrls.add(r.imgInnerUrl); photos.push({ url: r.imgInnerUrl, lbl: partCount > 1 ? 'Inner (' + r.partNo + ')' : 'Inner' }); } if (r.imgCartonUrl && !seenUrls.has(r.imgCartonUrl)) { seenUrls.add(r.imgCartonUrl); photos.push({ url: r.imgCartonUrl, lbl: partCount > 1 ? 'Carton (' + r.partNo + ')' : 'Carton' }); } }
+      const photoHtml = photos.length > 0 ? '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' + photos.map(p => '<img src="' + getThumbUrl(p.url, 200) + '" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer" onclick="event.stopPropagation();openLightbox(\'' + p.url + '\')" loading="lazy" />').join('') + '</div>' : '';
+
+      return `<div class="record-card ${isRejected ? 'rejected' : isApproved ? 'approved' : ''}" style="border-left:4px solid ${statusColor}" ${rowNums ? 'onclick="openDetailGroup(\'' + rowNums + '\')"' : ''}>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-weight:800;font-size:1.05rem;color:${statusColor}">${escHtml(first.customer || 'Unknown')}</div>
+          <span class="badge" style="background:${isRejected ? 'var(--danger-dim)' : isApproved ? 'var(--primary-dim)' : 'var(--amber-dim)'};color:${statusColor};border-color:${isRejected ? 'var(--danger-border)' : isApproved ? 'var(--primary-border)' : 'var(--amber-border)'}">${statusText}</span>
+        </div>
+        <div style="font-size:0.85rem;color:var(--muted-fg);margin-bottom:6px">
+          <strong>PI:</strong> ${escHtml([...new Set(grecs.map(r => r.pi).filter(Boolean))].join(', ') || '\u2014')} | <strong>Carton:</strong> ${escHtml(first.cartonId || '\u2014')} | <strong>Parts:</strong> ${escHtml(partNos.join(', ') || '\u2014')}
+          ${partCount > 1 ? '<span class="badge badge-muted" style="margin-left:6px">' + partCount + ' parts</span>' : ''}
+        </div>
+        <div style="display:flex;gap:12px;font-size:0.8rem;color:var(--muted-fg);margin-bottom:4px">
+          <span><strong>Qty:</strong> ${totalQty} pcs</span><span><strong>Packed:</strong> ${escHtml(first.packedBy || '\u2014')}</span><span>${fmtDate(first.timestamp || first.createdAt)}</span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:0.75rem;margin-top:6px">
+          <span style="color:${bagOk ? 'var(--green)' : 'var(--danger)'}">Bag ${bagOk ? '\u2705' : '\u274C'}</span>
+          <span style="color:${innerOk ? 'var(--green)' : 'var(--danger)'}">Inner ${innerOk ? '\u2705' : '\u274C'}</span>
+          <span style="color:${outerOk ? 'var(--green)' : 'var(--danger)'}">Outer ${outerOk ? '\u2705' : '\u274C'}</span>
+        </div>
+        ${isRejected ? '<div style="font-size:0.8rem;color:var(--danger);margin-top:8px;font-style:italic;background:var(--danger-dim);padding:8px;border-radius:6px;border:1px solid var(--danger-border)">' + escHtml(grecs.find(r => r.remarks)?.remarks || '') + '</div>' : ''}
+        ${photoHtml}
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  window.openDetailGroup = async function(rowNums) {
+    const nums = rowNums.split(',').map(n => parseInt(n.trim())).filter(Boolean);
+    if (nums.length === 0) return;
+    let records = [];
+    for (const n of nums) { const c = recordCache.get(n); if (c) records.push(c); }
+    if (records.length < nums.length) {
+      try { const res = await gasGet({ action: 'batchRecords', rows: nums.join(',') }); if (res && res.records) { for (const r of res.records) { if (!recordCache.has(r.row)) recordCache.set(r.row, r); records.push(r); } } } catch {}
+    }
+    if (records.length === 0) return;
+    records.sort((a, b) => nums.indexOf(a.row) - nums.indexOf(b.row));
+    showDetailModal(records);
+  }
+
+  function showDetailModal(records) {
+    const wrap = document.getElementById('checker-modal-wrap');
+    const first = records[0];
+    let isRejected = false, isPending = false;
+    for (const r of records) { const s = (r.status || '').toLowerCase(); if (s.includes('rejected')) isRejected = true; else if (!s || s === '' || s === 'pending') isPending = true; }
+    const overallStatus = isRejected ? 'REJECTED' : isPending ? 'PENDING' : 'APPROVED';
+    const statusBadgeColor = isRejected ? 'badge-red' : isPending ? 'badge-amber' : 'badge-green';
+    const rowNums = records.map(r => r.row).join(',');
+    const totalQty = records.reduce((sum, r) => sum + (parseInt(r.qty) || 0), 0);
+
+    const partsHtml = records.map((r, idx) => {
+      const bagOk = r.bagMatch === true || r.bagMatch === 'true' || String(r.bag || '') === '';
+      const innerOk = r.innerMatch === true || r.innerMatch === 'true' || String(r.inner || '') === '';
+      const outerOk = r.outerMatch === true || r.outerMatch === 'true' || String(r.outer || '') === '';
+      return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;background:var(--muted)">
+        <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;color:var(--primary)">Part ${idx + 1}: ${escHtml(r.partNo || '\u2014')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:8px"><div><strong>PI:</strong> ${escHtml(r.pi || '\u2014')}</div><div><strong>Qty:</strong> ${r.qty || '0'} pcs</div></div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:0.8rem">
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${bagOk ? 'var(--green)' : 'var(--danger)'}">${bagOk ? '\u2705' : '\u274C'}</span><span><strong>Bag:</strong> ${escHtml(r.bag || '\u2014')}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${innerOk ? 'var(--green)' : 'var(--danger)'}">${innerOk ? '\u2705' : '\u274C'}</span><span><strong>Inner:</strong> ${escHtml(r.inner || '\u2014')}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${outerOk ? 'var(--green)' : 'var(--danger)'}">${outerOk ? '\u2705' : '\u274C'}</span><span><strong>Outer:</strong> ${escHtml(r.outer || '\u2014')}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const hasPending = records.some(r => { const s = (r.status || '').toLowerCase(); return !s || s === '' || s === 'pending'; });
+    const verdictSection = hasPending ? `
+      <div class="section-title" style="border-top:1px solid var(--border);padding-top:16px">Checker Decision</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button class="btn btn-primary" style="flex:1" id="btnApprove" onclick="selectVerdict('Approved')"><svg><use href="#ic-check"/></svg>Approve All</button>
+        <button class="btn btn-danger-outline" style="flex:1" id="btnReject" onclick="selectVerdict('Rejected')"><svg><use href="#ic-file-x"/></svg>Reject All</button>
+      </div>
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">Checker Name <span class="req">*</span></label><input type="text" id="checker-name" placeholder="Enter your name..." /></div>
+      <div class="form-group" style="margin-bottom:14px"><label class="form-label">Remarks / Rejection Reason</label><textarea id="checker-remarks" rows="3" placeholder="Enter remarks or reason..." style="text-transform:none"></textarea></div>
+      <button class="btn btn-primary btn-full" id="btnSubmitVerdict" onclick="submitVerdictGroup('${rowNums}')">Submit Decision</button>
+    ` : '';
+
+    wrap.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)document.getElementById('checker-modal-wrap').innerHTML=''">
+      <div class="modal" style="max-width:640px">
+        <div class="modal-header">
+          <div class="modal-title"><svg style="width:16px;height:16px"><use href="#ic-check-sq"/></svg>${escHtml(first.customer || 'Record')}<span class="badge ${statusBadgeColor}" style="margin-left:8px">${overallStatus}</span></div>
+          <button class="btn-icon" onclick="document.getElementById('checker-modal-wrap').innerHTML=''"><svg style="width:14px;height:14px"><use href="#ic-x"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-kv" style="margin-bottom:16px">
+            <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(first.cartonId || '\u2014')}</div></div>
+            <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(first.packedBy || '\u2014')}</div></div>
+            <div class="kv-box"><div class="kv-label">Total Qty</div><div class="kv-value">${totalQty}</div></div>
+            <div class="kv-box"><div class="kv-label">Parts</div><div class="kv-value">${records.length}</div></div>
+            <div class="kv-box"><div class="kv-label">PI</div><div class="kv-value">${escHtml(first.pi || '\u2014')}</div></div>
+            <div class="kv-box"><div class="kv-label">Date</div><div class="kv-value">${fmtDate(first.timestamp || first.createdAt)}</div></div>
+          </div>
+          ${partsHtml}
+          ${verdictSection}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  window.selectVerdict = function(verdict) {
+    selectedVerdict = verdict;
+    const btnA = document.getElementById('btnApprove');
+    const btnR = document.getElementById('btnReject');
+    if (btnA) { btnA.className = verdict === 'Approved' ? 'btn btn-primary' : 'btn btn-outline'; btnA.style.flex = '1'; }
+    if (btnR) { btnR.className = verdict === 'Rejected' ? 'btn btn-danger' : 'btn btn-danger-outline'; btnR.style.flex = '1'; }
+  };
+
+  window.submitVerdictGroup = async function(rowNums) {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    const btn = document.getElementById('btnSubmitVerdict');
+    if (btn) { btn.disabled = true; btn.textContent = 'Please wait...'; }
+    const name = document.getElementById('checker-name').value.trim();
+    const remarks = document.getElementById('checker-remarks').value.trim();
+    if (!name) { toast('Please enter Checker Name', 'error'); isSubmitting = false; if (btn) { btn.disabled = false; btn.textContent = 'Submit Decision'; } return; }
+    if (!selectedVerdict) { toast('Please select Approve or Reject', 'error'); isSubmitting = false; if (btn) { btn.disabled = false; btn.textContent = 'Submit Decision'; } return; }
+    const statusStr = selectedVerdict === 'Approved' ? 'Verified \u2705' : 'Rejected \u274C';
+    const nums = rowNums.split(',').map(n => parseInt(n.trim())).filter(Boolean);
+    let successCount = 0;
+    for (const n of nums) { try { const res = await gasPost({ action: 'verify', row: n, checker: name.toUpperCase(), status: statusStr, remarks: remarks.toUpperCase() }); if (res && res.success) successCount++; } catch {} }
+    if (successCount > 0) { toast(successCount + ' part(s) ' + selectedVerdict.toLowerCase() + 'd \u2705', 'success'); document.getElementById('checker-modal-wrap').innerHTML = ''; loadChecker(); }
+    else { toast('Submit failed', 'error'); if (btn) { btn.disabled = false; btn.textContent = 'Submit Decision'; } }
+    isSubmitting = false;
+  };
+
+  if (checkerAuthenticated) loadChecker(); else showPasswordGate();
+})();
+</script>
+</body>
+</html>

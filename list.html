@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>List Detail — MG Packing</title>
+<?!= include('shared'); ?>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="brand">
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
+      <svg class="moon"><use href="#ic-moon"/></svg>
+      <svg class="sun"><use href="#ic-sun"/></svg>
+    </button>
+    <div class="section-label">Staff</div>
+    <nav>
+      <a href="#" data-page="index" onclick="goTo('index');return false"><svg><use href="#ic-list"/></svg>Packing Lists</a>
+      <a href="#" data-page="staff" onclick="goTo('staff');return false"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
+    </nav>
+    <div class="section-label">Supervisor</div>
+    <nav>
+      <a href="#" data-page="checker" onclick="goTo('checker');return false"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
+      <a href="#" data-page="transfer" onclick="goTo('transfer');return false"><svg><use href="#ic-transfer"/></svg>Transfer</a>
+      <a href="#" data-page="rejects" class="danger" onclick="goTo('rejects');return false"><svg><use href="#ic-alert"/></svg>Reject List</a>
+    </nav>
+    <div class="section-label">Tools</div>
+    <nav>
+      <a href="#" data-page="missing" onclick="goTo('missing');return false"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
+    </nav>
+    <div style="flex:1"></div>
+  </div>
+  <div id="main">
+    <div id="list-content">
+      <div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading list detail...</p></div>
+    </div>
+    <div id="carton-detail-wrap"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  initSidebar('');
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const listRef = urlParams.get('ref') || '';
+  let LIST = null;
+  let CARTONS = [];
+
+  async function load() {
+    // Load the list
+    const listsRes = await gasGet({ action: 'packingLists' });
+    const lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
+    LIST = lists.find(l => l.listRef === listRef);
+    if (!LIST) {
+      document.getElementById('list-content').innerHTML = '<div class="empty-state"><svg><use href="#ic-alert"/></svg><p>List not found</p><button class="btn btn-primary mt-12" onclick="goTo(\'index\')">Back to Lists</button></div>';
+      return;
+    }
+    const cartonsRes = await gasGet({ action: 'cartons', listRef: listRef, includeStatus: '1' });
+    CARTONS = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
+    render();
+  }
+
+  function render() {
+    const el = document.getElementById('list-content');
+    const totalParts = CARTONS.reduce((s, c) => s + (c.parts || []).length, 0);
+    const rejected = CARTONS.filter(c => c.status === 'rejected');
+
+    let html = `
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-icon" onclick="goTo('index')"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></button>
+        <div>
+          <div class="page-title"><svg><use href="#ic-list"/></svg>${escHtml(LIST.listRef)}</div>
+          <div class="page-subtitle">${escHtml(LIST.customer)} \u2014 ${CARTONS.length} cartons \u2014 ${totalParts} parts total</div>
+        </div>
+      </div>
+      <span class="badge ${LIST.status==='open'?'badge-green':LIST.status==='completed'?'badge-blue':'badge-muted'}">${LIST.status}</span>
+    </div>
+    <div class="grid-3" style="margin-bottom:16px">
+      <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
+        <svg style="width:18px;height:18px;color:var(--primary)"><use href="#ic-box"/></svg>
+        <div><div class="text-xs text-muted">Customer</div><div class="font-bold text-sm">${escHtml(LIST.customer)}</div></div>
+      </div>
+      <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
+        <svg style="width:18px;height:18px;color:var(--primary)"><use href="#ic-activity"/></svg>
+        <div><div class="text-xs text-muted">Packed By</div><div class="font-bold text-sm">${escHtml(LIST.createdBy)}</div></div>
+      </div>
+      <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
+        <svg style="width:18px;height:18px;color:var(--primary)"><use href="#ic-package"/></svg>
+        <div><div class="text-xs text-muted">Team</div><div class="font-bold text-sm">${escHtml(LIST.team)}</div></div>
+      </div>
+    </div>`;
+
+    if (LIST.status === 'completed') {
+      html += `<div class="complete-banner"><div class="complete-title"><svg style="width:16px;height:16px;vertical-align:middle;margin-right:6px"><use href="#ic-check-circle"/></svg>Packing List Completed</div><div class="text-sm text-muted">This list has been finalized.</div></div>`;
+    }
+
+    if (rejected.length > 0) {
+      html += `<div class="alert alert-danger" style="margin-bottom:16px"><svg><use href="#ic-alert"/></svg><div><strong>${rejected.length} carton${rejected.length>1?'s':''} rejected.</strong> Click Edit on a rejected row to correct.</div></div>`;
+    }
+
+    if (LIST.status === 'open') {
+      html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="text-xs text-muted">Carton Entries (${CARTONS.length})</div>
+        <div class="gap-8">
+          <button class="btn btn-outline btn-sm" onclick="goTo('staff')"><svg><use href="#ic-plus"/></svg>Add Carton</button>
+        </div>
+      </div>`;
+    }
+
+    html += `
+    <div class="table-wrap" style="margin-bottom:16px">
+      <table class="table-responsive">
+        <thead><tr><th>Carton ID</th><th>P/I No.</th><th>Part No.</th><th>Qty</th><th>Barcodes</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+        ${CARTONS.length === 0 ? '<tr><td colspan="7"><div class="empty-state"><svg><use href="#ic-box"/></svg><p>No entries yet</p></div></td></tr>' :
+          CARTONS.map((c, ci) => {
+            const firstPart = (c.parts || [])[0] || {};
+            const partCount = (c.parts || []).length;
+            const isRejected = c.status === 'rejected';
+            const isVerified = c.status === 'verified';
+            const bagM = firstPart.bagMatch === true || firstPart.bagMatch === 'no';
+            const innerM = firstPart.innerMatch === true || firstPart.innerMatch === 'no';
+            const outerM = firstPart.outerMatch === true || firstPart.outerMatch === 'no';
+            const piVal = c.cartonType === 'kit' ? (c.cartonPI || firstPart.pi || '\u2014') : (firstPart.pi || '\u2014');
+            const qtyVal = c.cartonType === 'kit' ? (c.cartonQty || '\u2014') : (firstPart.qty || '\u2014');
+            const partNoVal = firstPart.partNo || c.partNo || '\u2014';
+            let statusBadge = '<span class="badge badge-amber">PENDING</span>';
+            if (isRejected) statusBadge = '<span class="badge badge-red">REJECTED</span>';
+            else if (isVerified) statusBadge = '<span class="badge badge-green">VERIFIED</span>';
+            return `<tr class="${isRejected ? 'rejected' : 'clickable'}" onclick="${isRejected ? '' : 'viewCarton(' + ci + ')'}">
+              <td data-label="Carton ID" class="font-bold text-primary">${escHtml(c.cartonId || '\u2014')}</td>
+              <td data-label="P/I No." class="text-sm">${escHtml(piVal)}</td>
+              <td data-label="Part No."><span class="font-bold text-sm">${escHtml(partNoVal)}</span>${partCount > 1 ? '<span class="badge badge-muted" style="margin-left:6px">+' + (partCount - 1) + ' more</span>' : ''}</td>
+              <td data-label="Qty" style="text-align:center;font-weight:700;font-family:var(--font-mono)">${escHtml(qtyVal)}</td>
+              <td data-label="Barcodes" style="text-align:center;white-space:nowrap"><span style="color:var(--muted-fg);font-size:11px">B ${bagM ? '<span style="color:var(--green)">\u2713</span>' : '<span style="color:var(--danger)">\u2717</span>'} I ${innerM ? '<span style="color:var(--green)">\u2713</span>' : '<span style="color:var(--danger)">\u2717</span>'} O ${outerM ? '<span style="color:var(--green)">\u2713</span>' : '<span style="color:var(--danger)">\u2717</span>'}</span></td>
+              <td data-label="Status">${statusBadge}</td>
+              <td data-label="Date" class="text-xs text-muted">${fmtDate(c.createdAt)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+    if (LIST.status === 'open' && CARTONS.length > 0) {
+      html += `
+      <div style="padding:16px;background:var(--card);border:1.5px solid var(--primary-border);border-radius:var(--radius);text-align:center;margin-bottom:16px">
+        <div style="font-size:12px;color:var(--muted-fg);margin-bottom:10px">When all cartons are packed, mark this list as completed.</div>
+        <button class="btn btn-primary" onclick="completeList()"><svg><use href="#ic-check-circle"/></svg>Complete Packing List</button>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
+  window.viewCarton = function(ci) {
+    const c = CARTONS[ci];
+    if (!c) return;
+    const wrap = document.getElementById('carton-detail-wrap');
+    let partsHtml = '';
+    if (c.parts && c.parts.length > 0) {
+      partsHtml = `<div class="section-title">Parts in this Carton (${c.parts.length})</div>
+      <div class="parts-summary" style="margin-bottom:16px"><table><thead><tr><th>#</th><th>Part No</th><th>PI</th><th>Qty</th></tr></thead><tbody>
+      ${c.parts.map((p, pi) => `<tr><td style="font-family:var(--font-mono);font-weight:700">${pi + 1}</td><td class="font-bold text-primary">${escHtml(p.partNo)}</td><td class="text-xs text-muted">${escHtml(p.pi || '\u2014')}</td><td style="font-weight:700">${p.qty}</td></tr>`).join('')}
+      </tbody></table></div>`;
+    }
+    let photoHtml = '';
+    const photos = [
+      { lbl: 'Bag Photo', url: c.imgBagUrl },
+      { lbl: 'Inner Photo', url: c.imgInnerUrl },
+      { lbl: 'Carton Photo', url: c.imgCartonUrl }
+    ].filter(p => p.url);
+    if (photos.length > 0) {
+      photoHtml = `<div class="section-title">Photos \u2014 Tap to zoom</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        ${photos.map(p => `<div style="text-align:center;cursor:pointer" onclick="openLightbox('${p.url}')"><img src="${getThumbUrl(p.url, 400)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--border)" loading="lazy" /><div style="font-size:10px;color:var(--muted-fg);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">${p.lbl}</div></div>`).join('')}
+      </div>`;
+    }
+
+    wrap.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)document.getElementById('carton-detail-wrap').innerHTML=''">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+          <div class="modal-title"><svg style="width:16px;height:16px"><use href="#ic-box"/></svg>${escHtml(c.cartonRef)} Details</div>
+          <button class="btn-icon" onclick="document.getElementById('carton-detail-wrap').innerHTML=''"><svg style="width:14px;height:14px"><use href="#ic-x"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-kv" style="margin-bottom:14px">
+            <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(c.cartonId)}</div></div>
+            <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(LIST.createdBy || '\u2014')}</div></div>
+            <div class="kv-box"><div class="kv-label">Type</div><div class="kv-value">${c.cartonType === 'kit' ? 'KIT' : c.cartonType === 'multiple' ? 'MULTIPLE' : 'SINGLE'}</div></div>
+          </div>
+          ${partsHtml}
+          ${photoHtml}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline btn-full" onclick="document.getElementById('carton-detail-wrap').innerHTML=''">Close</button>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  window.completeList = async function() {
+    const pw = prompt('ENTER PASSWORD TO COMPLETE PACKING LIST:');
+    if (pw === null) return;
+    if (pw !== 'simon1981') { toast('Incorrect password.', 'error'); return; }
+    if (!confirm('Mark this packing list as COMPLETED? Staff will no longer be able to add cartons.')) return;
+    const completedAt = new Date().toISOString();
+    await gasPost({ action: 'updatePackingList', listRef: LIST.listRef, status: 'completed', completedAt });
+    LIST.status = 'completed';
+    toast('Packing list completed! \u2705', 'success');
+    render();
+  };
+
+  load();
+})();
+</script>
+</body>
+</html>

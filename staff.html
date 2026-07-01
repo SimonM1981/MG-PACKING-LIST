@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Staff Entry — MG Packing</title>
+<?!= include('shared'); ?>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <div class="brand">
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
+      <svg class="moon"><use href="#ic-moon"/></svg>
+      <svg class="sun"><use href="#ic-sun"/></svg>
+    </button>
+    <div class="section-label">Staff</div>
+    <nav>
+      <a href="#" data-page="index" onclick="goTo('index');return false"><svg><use href="#ic-list"/></svg>Packing Lists</a>
+      <a href="#" data-page="staff" class="active"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
+    </nav>
+    <div class="section-label">Supervisor</div>
+    <nav>
+      <a href="#" data-page="checker" onclick="goTo('checker');return false"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
+      <a href="#" data-page="transfer" onclick="goTo('transfer');return false"><svg><use href="#ic-transfer"/></svg>Transfer</a>
+      <a href="#" data-page="rejects" class="danger" onclick="goTo('rejects');return false"><svg><use href="#ic-alert"/></svg>Reject List</a>
+    </nav>
+    <div class="section-label">Tools</div>
+    <nav>
+      <a href="#" data-page="missing" onclick="goTo('missing');return false"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
+    </nav>
+    <div style="flex:1"></div>
+  </div>
+  <div id="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title"><svg><use href="#ic-plus"/></svg>Staff Entry</div>
+        <div class="page-subtitle">Select a packing list and add cartons quickly.</div>
+      </div>
+    </div>
+    <div id="staff-content">
+      <div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading packing lists...</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  initSidebar('staff');
+
+  let staffSelectedList = null;
+  let formState = { cartonId: '', cartonType: 'single', cartonPi: '', cartonQty: '1', cartonInner: '', cartonOuter: '', cartonInnerMatch: null, cartonOuterMatch: null, cartonPhotos: { allParts: null, innerBox: null, cartonLabel: null }, parts: [], uploading: false };
+  let lookupCache = {};
+  const lookupDebounce = {};
+  let isSubmitting = false;
+
+  async function load() {
+    let lists = null;
+    try {
+      const cached = localStorage.getItem('mg_lists_cache');
+      const cacheTime = localStorage.getItem('mg_lists_cache_time');
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 300000) { lists = JSON.parse(cached); }
+    } catch(e) {}
+    if (!lists || lists.length === 0) {
+      const res = await gasGet({ action: 'packingLists' });
+      if (res && res.lists) {
+        lists = res.lists;
+        try { localStorage.setItem('mg_lists_cache', JSON.stringify(lists)); localStorage.setItem('mg_lists_cache_time', String(Date.now())); } catch(e) {}
+      }
+    }
+    if (!lists) lists = [];
+    const openLists = lists.filter(l => l.status === 'open');
+    staffSelectedList = openLists.length > 0 ? openLists[0] : null;
+
+    let html = `
+    <div class="card" style="padding:14px 18px;margin-bottom:16px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">Select Packing List</label>
+        <select id="staff-list-select" onchange="onListChange(this)" style="width:100%;max-width:400px">`;
+    if (openLists.length === 0) {
+      html += '<option>No open packing lists</option>';
+    } else {
+      for (const l of openLists) {
+        const selected = staffSelectedList && l.listRef === staffSelectedList.listRef ? ' selected' : '';
+        html += `<option value="${escHtml(l.listRef)}"${selected}>${escHtml(l.listRef)} \u2014 ${escHtml(l.customer)} (${escHtml(l.createdBy || '')})</option>`;
+      }
+    }
+    html += `</select></div>`;
+    if (staffSelectedList) {
+      html += `<div class="text-xs text-muted mt-4">${escHtml(staffSelectedList.customer)} \u2014 ${escHtml(staffSelectedList.team || '')}</div>`;
+    }
+    html += `</div><div id="entry-form-wrap"></div>`;
+    document.getElementById('staff-content').innerHTML = html;
+
+    if (staffSelectedList) {
+      resetForm();
+      renderForm();
+    } else {
+      document.getElementById('entry-form-wrap').innerHTML = `<div class="alert alert-amber"><svg><use href="#ic-alert"/></svg><div>No open packing lists. Ask supervisor to create one.</div></div>`;
+    }
+  }
+
+  window.onListChange = function(sel) {
+    var lists = [];
+    try { lists = JSON.parse(localStorage.getItem('mg_lists_cache') || '[]'); } catch(e) {}
+    staffSelectedList = lists.find(l => l.listRef === sel.value) || null;
+    resetForm();
+    renderForm();
+  };
+
+  function resetForm() {
+    formState = { cartonId: '', cartonType: 'single', cartonPi: '', cartonQty: '1', cartonInner: '', cartonOuter: '', cartonInnerMatch: null, cartonOuterMatch: null, cartonPhotos: { allParts: null, innerBox: null, cartonLabel: null }, parts: [], uploading: false };
+    lookupCache = {};
+    addPart();
+  }
+
+  function addPart() {
+    const idx = formState.parts.length;
+    if (formState.cartonType === 'kit') {
+      formState.parts.push({ partNo: '', bag: '', bagMatch: null });
+    } else {
+      formState.parts.push({ partNo: '', pi: '', qty: '1', bag: '', inner: '', outer: '', bagMatch: null, innerMatch: null, outerMatch: null, photos: { bag: null, inner: null, outer: null } });
+    }
+    return idx;
+  }
+
+  function removePart(idx) {
+    formState.parts.splice(idx, 1);
+    if (formState.parts.length === 0) addPart();
+    renderForm();
+    updateSubmit();
+  }
+
+  function renderForm() {
+    const wrap = document.getElementById('entry-form-wrap');
+    if (!staffSelectedList) return;
+    if (formState.parts.length === 0) addPart();
+
+    wrap.innerHTML = `
+    <div class="form-panel" id="entry-form">
+      <div class="form-panel-header primary-bg">
+        <span class="font-bold text-primary text-sm" style="text-transform:uppercase;letter-spacing:.07em">
+          <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px"><use href="#ic-box"/></svg>New Carton \u2014 ${escHtml(staffSelectedList.listRef)}
+        </span>
+      </div>
+      <div class="info-row">
+        <span><strong>Customer:</strong> ${escHtml(staffSelectedList.customer)}</span>
+        <span><strong>Packed By:</strong> ${escHtml(staffSelectedList.createdBy)}</span>
+        <span><strong>Team:</strong> ${escHtml(staffSelectedList.team)}</span>
+      </div>
+      <div class="form-panel-body">
+        <div class="section-title">Carton Info</div>
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="form-group">
+            <label class="form-label">Carton ID <span class="req">*</span></label>
+            <div class="input-wrap">
+              <input type="text" id="f-cartonId" placeholder="Scan or type carton ID..." value="${escHtml(formState.cartonId)}" oninput="formState.cartonId=this.value.trim().toUpperCase();this.value=formState.cartonId" />
+              <button type="button" class="btn-icon" onclick="openCamera('Carton ID',v=>{document.getElementById('f-cartonId').value=v;formState.cartonId=v;})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <label class="form-label">Contents Type <span class="req">*</span></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn ${formState.cartonType==='single'?'btn-primary':'btn-outline'}" style="flex:1" onclick="setType('single')">Single Item</button>
+            <button type="button" class="btn ${formState.cartonType==='kit'?'btn-primary':'btn-outline'}" style="flex:1" onclick="setType('kit')">Kit</button>
+            <button type="button" class="btn ${formState.cartonType==='multiple'?'btn-primary':'btn-outline'}" style="flex:1" onclick="setType('multiple')">Multiple Parts</button>
+          </div>
+        </div>
+
+        <div id="kit-level-fields" class="${formState.cartonType==='kit'?'':'hidden'}" style="margin-bottom:16px">
+          <div class="grid-3">
+            <div class="form-group">
+              <label class="form-label">PI No <span class="req">*</span></label>
+              <div class="input-wrap">
+                <input type="text" id="f-cartonPi" placeholder="123456/26..." value="${escHtml(formState.cartonPi)}" oninput="formState.cartonPi=this.value.trim().toUpperCase();this.value=formState.cartonPi;syncKit()" />
+                <button type="button" class="btn-icon" onclick="openCamera('PI No',v=>{document.getElementById('f-cartonPi').value=v;formState.cartonPi=v.trim().toUpperCase();syncKit();})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Qty (pcs) <span class="req">*</span></label>
+              <input type="number" id="f-cartonQty" min="1" value="${formState.cartonQty}" oninput="formState.cartonQty=this.value;syncKit()" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          ${formState.cartonType==='single'?'Item Details':formState.cartonType==='kit'?'Items in this Kit':'Parts in this Carton'}
+          ${formState.cartonType !== 'single' ? '<span style="float:right"><button class="btn btn-primary btn-xs" onclick="addNewPart()"><svg><use href="#ic-plus"/></svg>Add</button></span>' : ''}
+        </div>
+        <div id="parts-container"></div>
+
+        ${formState.cartonType === 'kit' ? `
+        <div style="font-size:10px;color:var(--muted-fg);margin:16px 0 10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-top:1px solid var(--border);padding-top:14px">Shared Barcodes (All Parts)</div>
+        <div class="grid-2" style="margin-bottom:16px">
+          <div class="form-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:4px">
+              <span class="form-label">Inner Box Barcode <span class="req">*</span></span>
+              <span id="match-badge-kit-inner" class="match-badge" style="display:none"></span>
+            </div>
+            <div class="input-wrap">
+              <input type="text" id="f-kit-inner" placeholder="Scan or type... (NO if none)" value="${escHtml(formState.cartonInner)}" oninput="onKitBarcode('inner')" />
+              <button type="button" class="btn-icon" onclick="openCamera('Inner Box',v=>{document.getElementById('f-kit-inner').value=v;onKitBarcode('inner');})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <div style="display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:4px">
+              <span class="form-label">Outer Carton Barcode <span class="req">*</span></span>
+              <span id="match-badge-kit-outer" class="match-badge" style="display:none"></span>
+            </div>
+            <div class="input-wrap">
+              <input type="text" id="f-kit-outer" placeholder="Scan or type... (NO if none)" value="${escHtml(formState.cartonOuter)}" oninput="onKitBarcode('outer')" />
+              <button type="button" class="btn-icon" onclick="openCamera('Outer Carton',v=>{document.getElementById('f-kit-outer').value=v;onKitBarcode('outer');})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted-fg);margin:16px 0 10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-top:1px solid var(--border);padding-top:14px">Kit Photos</div>
+        <div class="grid-3" style="margin-bottom:16px">
+          ${renderKitPhoto('allParts', 'All Parts Laid Out')}
+          ${renderKitPhoto('innerBox', 'Inner Box / Label')}
+          ${renderKitPhoto('cartonLabel', 'Carton / Label')}
+        </div>
+        ` : ''}
+
+        <div id="mismatch-warn" class="alert alert-danger hidden"><svg><use href="#ic-alert"/></svg><div>Barcode MISMATCH detected \u2014 cannot submit until all barcodes match.</div></div>
+        <div id="form-error" class="hidden" style="color:var(--danger);font-size:12px;margin-bottom:8px;font-weight:600"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px">
+          <div id="verify-hint" class="text-xs text-muted">All barcodes must be verified (MATCH or NO) before submitting.</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="resetForm();renderForm();">Clear</button>
+            <button class="btn btn-primary" id="btn-submit" disabled onclick="submitEntry()">
+              <svg><use href="#ic-box"/></svg><span id="btn-submit-label">Save Entry</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    renderParts();
+  }
+
+  function renderParts() {
+    const container = document.getElementById('parts-container');
+    if (!container) return;
+    const isKit = formState.cartonType === 'kit';
+    container.innerHTML = formState.parts.map((part, idx) => `
+      <div class="part-card" id="part-card-${idx}">
+        <div class="part-card-header">
+          <span class="part-number">${isKit ? 'Kit Item' : formState.cartonType === 'single' ? 'Item' : 'Part'} ${idx + 1}</span>
+          ${formState.parts.length > 1 ? `<button class="part-remove" onclick="removePartWindow(${idx})"><svg style="width:12px;height:12px;vertical-align:middle;margin-right:2px"><use href="#ic-trash"/></svg>Remove</button>` : ''}
+        </div>
+        ${!isKit ? `
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="form-group">
+            <label class="form-label">Part No <span class="req">*</span></label>
+            <div class="input-wrap">
+              <input type="text" id="f-partNo-${idx}" placeholder="Scan or type..." value="${escHtml(part.partNo)}" oninput="onPartField(${idx},'partNo')" />
+              <button type="button" class="btn-icon" onclick="openCamera('Part ${idx+1} No',v=>{document.getElementById('f-partNo-${idx}').value=v;onPartField(${idx},'partNo');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">PI No</label>
+            <div class="input-wrap">
+              <input type="text" id="f-pi-${idx}" placeholder="123456/26..." value="${escHtml(part.pi)}" oninput="onPartField(${idx},'pi')" />
+              <button type="button" class="btn-icon" onclick="openCamera('PI No',v=>{document.getElementById('f-pi-${idx}').value=v;onPartField(${idx},'pi');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px;max-width:120px">
+          <label class="form-label">Qty <span class="req">*</span></label>
+          <input type="number" id="f-qty-${idx}" min="1" value="${part.qty}" oninput="onPartField(${idx},'qty')" />
+        </div>
+        ` : `
+        <div class="form-group" style="margin-bottom:12px;max-width:none">
+          <label class="form-label">Part No <span class="req">*</span></label>
+          <div class="input-wrap">
+            <input type="text" id="f-partNo-${idx}" placeholder="Scan or type..." value="${escHtml(part.partNo)}" oninput="onPartField(${idx},'partNo')" />
+            <button type="button" class="btn-icon" onclick="openCamera('Part ${idx+1} No',v=>{document.getElementById('f-partNo-${idx}').value=v;onPartField(${idx},'partNo');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
+          </div>
+        </div>
+        `}
+        ${isKit ? `
+        <div class="grid-1" style="max-width:none">${renderPartBarcode(idx, 'bag', 'Bag Barcode')}</div>
+        ` : `
+        <div style="font-size:10px;color:var(--muted-fg);margin-bottom:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Barcode Verification \u2014 Type NO if none</div>
+        <div class="grid-3">
+          ${renderPartBarcode(idx, 'bag', '1. Bag Barcode')}
+          ${renderPartBarcode(idx, 'inner', '2. Inner Barcode')}
+          ${renderPartBarcode(idx, 'outer', '3. Outer Barcode')}
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--muted-fg);margin-bottom:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Photos for Part ${idx+1}</div>
+          <div class="grid-3">
+            ${renderPartPhoto(idx, 'bag', 'Bag with Part')}
+            ${renderPartPhoto(idx, 'inner', 'Inner Box / Label')}
+            ${renderPartPhoto(idx, 'outer', 'Outer / Carton Label')}
+          </div>
+        </div>
+        `}
+      </div>
+    `).join('');
+
+    formState.parts.forEach((p, idx) => {
+      setBadge(idx, 'bag', p.bagMatch);
+      if (!isKit) { setBadge(idx, 'inner', p.innerMatch); setBadge(idx, 'outer', p.outerMatch); }
+    });
+    if (isKit) { setKitBadge('inner', formState.cartonInnerMatch); setKitBadge('outer', formState.cartonOuterMatch); }
+    updateSubmit();
+  }
+
+  function renderPartBarcode(idx, which, label) {
+    return `<div class="form-group">
+      <div style="display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:4px">
+        <span class="form-label">${label}</span>
+        <span id="match-badge-${idx}-${which}" class="match-badge" style="display:none"></span>
+      </div>
+      <div class="input-wrap">
+        <input type="text" id="f-${which}-${idx}" placeholder="Scan or type..." value="${escHtml(formState.parts[idx]?.[which]||'')}" oninput="onPartBarcode(${idx},'${which}')" />
+        <button type="button" class="btn-icon" onclick="openCamera('${label}',v=>{document.getElementById('f-${which}-${idx}').value=v;onPartBarcode(${idx},'${which}')})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+      </div>
+    </div>`;
+  }
+  function renderPartPhoto(idx, which, label) {
+    const hasPhoto = formState.parts[idx]?.photos?.[which];
+    return `<div class="form-group" id="photo-group-${idx}-${which}">
+      <label class="form-label">${label}</label>
+      <input type="file" id="photo-input-${idx}-${which}" accept="image/*" capture="environment" style="display:none" onchange="handlePartPhoto(${idx},'${which}',this)" />
+      <button type="button" class="photo-btn ${hasPhoto?'has-photo':''}" id="photo-btn-${idx}-${which}" onclick="document.getElementById('photo-input-${idx}-${which}').click()">
+        <svg><use href="#ic-camera"/></svg><div><div class="text-sm font-bold">${label}</div><div class="text-xs text-muted mt-4">${hasPhoto?'Photo captured':'Tap to capture'}</div></div>
+      </button>
+      <div id="photo-thumb-${idx}-${which}">${hasPhoto?`<img class="photo-thumb" src="${hasPhoto}" onclick="openLightbox('${hasPhoto}')" />`:''}</div>
+    </div>`;
+  }
+  function renderKitPhoto(which, label) {
+    const hasPhoto = formState.cartonPhotos[which];
+    return `<div class="form-group">
+      <label class="form-label">${label}</label>
+      <input type="file" id="kit-photo-input-${which}" accept="image/*" capture="environment" style="display:none" onchange="handleKitPhoto('${which}',this)" />
+      <label for="kit-photo-input-${which}" class="photo-btn ${hasPhoto?'has-photo':''}" id="kit-photo-btn-${which}">
+        <svg><use href="#ic-camera"/></svg><div><div class="text-sm font-bold">${label}</div><div class="text-xs text-muted mt-4">${hasPhoto?'Photo captured':'Tap to capture'}</div></div>
+      </label>
+      <div id="kit-photo-thumb-${which}">${hasPhoto?`<img class="photo-thumb" src="${hasPhoto}" onclick="openLightbox('${hasPhoto}')" />`:''}</div>
+    </div>`;
+  }
+
+  window.setType = function(type) { formState.cartonType = type; formState.parts = []; if (type === 'kit') formState.cartonPhotos = { allParts: null, innerBox: null, cartonLabel: null }; addPart(); renderForm(); };
+  window.addNewPart = function() { addPart(); renderParts(); setTimeout(() => { const c = document.getElementById('parts-container'); if (c) c.lastElementChild?.scrollIntoView({ behavior: 'smooth' }); }, 50); };
+  window.removePartWindow = function(idx) { removePart(idx); };
+  window.onPartField = function(idx, field) { const el = document.getElementById('f-' + field + '-' + idx); if (!el) return; let val = el.value; if (field !== 'qty') val = val.trim().toUpperCase(); formState.parts[idx][field] = val; if (field !== 'qty') el.value = val; if (field === 'partNo' || field === 'pi') { lookupCache = {}; triggerLookup(idx); } };
+  window.onPartBarcode = function(idx, which) { const el = document.getElementById('f-' + which + '-' + idx); if (!el) return; const val = el.value.trim().toUpperCase(); formState.parts[idx][which] = val; el.value = val; if (!val) { formState.parts[idx][which + 'Match'] = null; setBadge(idx, which, null); updateSubmit(); return; } if (val === 'NO') { formState.parts[idx][which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce[idx + '-' + which]); setBadge(idx, which, 'checking'); lookupDebounce[idx + '-' + which] = setTimeout(() => doLookup(idx, which, val), 450); };
+  window.onKitBarcode = function(which) { const el = document.getElementById('f-kit-' + which); if (!el) return; const val = el.value.trim().toUpperCase(); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] = val; el.value = val; if (!val) { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = null; setKitBadge(which, null); updateSubmit(); return; } if (val === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce['kit-' + which]); setKitBadge(which, 'checking'); lookupDebounce['kit-' + which] = setTimeout(() => doKitLookup(which, val), 450); };
+  window.syncKit = function() { if (formState.cartonType !== 'kit') return; const pi = formState.cartonPi; formState.parts.forEach(p => { p.pi = pi; }); triggerLookup(0); };
+  window.handlePartPhoto = async function(idx, which, input) { const file = input.files[0]; if (!file) return; const dataUri = await compressImage(file); if (!formState.parts[idx].photos) formState.parts[idx].photos = { bag: null, inner: null, outer: null }; formState.parts[idx].photos[which] = dataUri; const btn = document.getElementById('photo-btn-' + idx + '-' + which); const thumb = document.getElementById('photo-thumb-' + idx + '-' + which); if (btn) btn.classList.add('has-photo'); if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + dataUri + '" onclick="openLightbox(\'' + dataUri + '\')" />'; input.value = ''; };
+  window.handleKitPhoto = async function(which, input) { try { const file = input.files[0]; if (!file) return; const dataUri = await compressImage(file); formState.cartonPhotos[which] = dataUri; const btn = document.getElementById('kit-photo-btn-' + which); const thumb = document.getElementById('kit-photo-thumb-' + which); if (btn) btn.classList.add('has-photo'); if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + dataUri + '" onclick="openLightbox(\'' + dataUri + '\')" />'; input.value = ''; } catch(err) { toast('Photo failed: ' + err.message, 'error'); } };
+
+  function triggerLookup(idx) { ['bag', 'inner', 'outer'].forEach(w => { const bc = formState.parts[idx][w]; if (bc && bc !== 'NO') { clearTimeout(lookupDebounce[idx + '-' + w]); setBadge(idx, w, 'checking'); lookupDebounce[idx + '-' + w] = setTimeout(() => doLookup(idx, w, bc), 400); } }); }
+
+  async function doLookup(idx, which, barcode) { const part = formState.parts[idx]; const key = barcode + '|' + (part.pi || '') + '|' + (part.partNo || '') + '|' + which; if (lookupCache[key] !== undefined) { applyResult(idx, which, barcode, lookupCache[key]); return; } try { const res = await gasGet({ action: 'lookup', barcode, pi: part.pi || '', partNo: part.partNo || '' }); if (res === null) { setBadge(idx, which, 'no-server'); updateSubmit(); return; } lookupCache[key] = res; applyResult(idx, which, barcode, res); } catch { setBadge(idx, which, 'no-server'); updateSubmit(); } }
+  function applyResult(idx, which, barcode, res) { const part = formState.parts[idx]; if (part[which] === 'NO') { part[which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; } if (res && res.found) { const bc = String(barcode).toUpperCase(); if (which === 'bag' && res.partNo && !part.partNo) { part.partNo = String(res.partNo).toUpperCase(); const pn = document.getElementById('f-partNo-' + idx); if (pn) pn.value = part.partNo; } const bagBC = String(res.bagBarcode || '').toUpperCase(); const innerBC = String(res.innerBarcode || '').toUpperCase(); const outerBC = String(res.outerBarcode || '').toUpperCase(); let isMatch = false; if (which === 'bag') isMatch = (bc === bagBC); else if (which === 'inner') isMatch = (bc === innerBC); else if (which === 'outer') isMatch = (bc === outerBC); part[which + 'Match'] = isMatch; setBadge(idx, which, isMatch); } else { part[which + 'Match'] = false; setBadge(idx, which, false); } updateSubmit(); }
+
+  async function doKitLookup(which, barcode) { const key = barcode + '|' + (formState.cartonPi || '') + '|kit-' + which; if (lookupCache[key] !== undefined) { applyKitResult(which, barcode, lookupCache[key]); return; } try { const repPartNo = formState.parts[0]?.partNo || ''; const res = await gasGet({ action: 'lookup', barcode, pi: formState.cartonPi || '', partNo: repPartNo }); if (res === null) { setKitBadge(which, 'no-server'); updateSubmit(); return; } lookupCache[key] = res; applyKitResult(which, barcode, res); } catch { setKitBadge(which, 'no-server'); updateSubmit(); } }
+  function applyKitResult(which, barcode, res) { if (formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } if (res && res.found) { const bc = String(barcode).toUpperCase(); const innerBC = String(res.innerBarcode || '').toUpperCase(); const outerBC = String(res.outerBarcode || '').toUpperCase(); let isMatch = false; if (which === 'inner') isMatch = (bc === innerBC); else if (which === 'outer') isMatch = (bc === outerBC); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = isMatch; setKitBadge(which, isMatch); } else { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = false; setKitBadge(which, false); } updateSubmit(); }
+
+  function setBadge(idx, which, state) { const badge = document.getElementById('match-badge-' + idx + '-' + which); const input = document.getElementById('f-' + which + '-' + idx); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
+  function setKitBadge(which, state) { const badge = document.getElementById('match-badge-kit-' + which); const input = document.getElementById('f-kit-' + which); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
+
+  function updateSubmit() {
+    const btn = document.getElementById('btn-submit');
+    const mismatchWarn = document.getElementById('mismatch-warn');
+    if (!btn) return;
+    let hasMismatch = false, allVerified = true;
+    const isKit = formState.cartonType === 'kit';
+    formState.parts.forEach(p => {
+      const checks = isKit ? ['bag'] : ['bag', 'inner', 'outer'];
+      checks.forEach(w => { const m = p[w + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; });
+    });
+    if (isKit) { ['inner', 'outer'].forEach(w => { const m = formState['carton' + w.charAt(0).toUpperCase() + w.slice(1) + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; }); }
+    if (mismatchWarn) mismatchWarn.classList.toggle('hidden', !hasMismatch);
+    btn.disabled = hasMismatch || !allVerified;
+  }
+
+  window.submitEntry = async function() {
+    if (isSubmitting) return;
+    isSubmitting = true;
+    setButtonLoading('btn-submit', true);
+    const cartonId = (document.getElementById('f-cartonId') || {}).value?.trim() || '';
+    if (!cartonId) { toast('Carton ID is required', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+
+    if (formState.cartonType === 'kit') {
+      const kitPi = (document.getElementById('f-cartonPi') || {}).value?.trim().toUpperCase() || formState.cartonPi;
+      const kitQty = (document.getElementById('f-cartonQty') || {}).value || formState.cartonQty;
+      if (!kitPi) { toast('PI No is required for Kit', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+      formState.cartonPi = kitPi; formState.cartonQty = kitQty; formState.parts.forEach(p => { p.pi = kitPi; p.qty = kitQty; });
+    }
+
+    const isKit = formState.cartonType === 'kit';
+    for (let i = 0; i < formState.parts.length; i++) {
+      const p = formState.parts[i];
+      if (!p.partNo) { toast('Part ' + (i + 1) + ': Part No required', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+      if (p.bagMatch === false) { toast('Part ' + (i + 1) + ': Bag barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+      if (!isKit && (p.innerMatch === false || p.outerMatch === false)) { toast('Part ' + (i + 1) + ': Barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+    }
+    if (isKit) { if (formState.cartonInnerMatch === false) { toast('Inner barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; } if (formState.cartonOuterMatch === false) { toast('Outer barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; } }
+
+    const cleanBC = v => (String(v || '').toUpperCase() === 'NO') ? '' : (v || '');
+    const matchBool = m => m === true || m === 'no';
+
+    async function maybeUpload(dataUri, filename) { if (!dataUri || !dataUri.startsWith('data:')) return dataUri || ''; try { const res = await gasPost({ action: 'uploadPhoto', base64: dataUri, filename }); return (res && res.url) ? res.url : dataUri; } catch { return dataUri; } }
+
+    let imgBagUrl, imgInnerUrl, imgCartonUrl;
+    if (isKit) {
+      [imgBagUrl, imgInnerUrl, imgCartonUrl] = await Promise.all([
+        maybeUpload(formState.cartonPhotos.allParts, 'kit_allparts_' + cartonId + '_' + Date.now() + '.jpg'),
+        maybeUpload(formState.cartonPhotos.innerBox, 'kit_inner_' + cartonId + '_' + Date.now() + '.jpg'),
+        maybeUpload(formState.cartonPhotos.cartonLabel, 'kit_carton_' + cartonId + '_' + Date.now() + '.jpg'),
+      ]);
+    } else {
+      const firstPart = formState.parts[0];
+      const firstPhotos = firstPart.photos || { bag: null, inner: null, outer: null };
+      [imgBagUrl, imgInnerUrl, imgCartonUrl] = await Promise.all([
+        maybeUpload(firstPhotos.bag, 'bag_' + cartonId + '_' + Date.now() + '.jpg'),
+        maybeUpload(firstPhotos.inner, 'inner_' + cartonId + '_' + Date.now() + '.jpg'),
+        maybeUpload(firstPhotos.outer, 'carton_' + cartonId + '_' + Date.now() + '.jpg'),
+      ]);
+    }
+
+    const now = new Date().toISOString();
+    const nextRefRes = await gasGet({ action: 'nextCartonRef', listRef: staffSelectedList.listRef });
+    const cartonRef = (nextRefRes && nextRefRes.nextRef) ? nextRefRes.nextRef : 'CTN-001';
+
+    let parts;
+    if (isKit) {
+      const kitPi = (formState.cartonPi || '').toUpperCase();
+      const kitQty = parseInt(formState.cartonQty) || 1;
+      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: kitPi, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
+    } else {
+      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch), photos: p.photos || { bag: null, inner: null, outer: null } }));
+    }
+
+    const cartonSaveData = { listRef: staffSelectedList.listRef, cartonRef, cartonId, cartonType: formState.cartonType, cartonPI: formState.cartonPi, cartonQty: formState.cartonQty, parts, imgBagUrl, imgInnerUrl, imgCartonUrl, createdAt: now, status: 'pending' };
+    if (isKit) { cartonSaveData.cartonInner = cleanBC(formState.cartonInner); cartonSaveData.cartonOuter = cleanBC(formState.cartonOuter); cartonSaveData.cartonInnerMatch = matchBool(formState.cartonInnerMatch); cartonSaveData.cartonOuterMatch = matchBool(formState.cartonOuterMatch); }
+    const cartonRes = await gasPost({ action: 'saveCarton', ...cartonSaveData });
+
+    // Submit to packing log
+    if (GAS_URL) {
+      try {
+        if (isKit) {
+          const allPartNos = parts.map(p => p.partNo).join(', ');
+          const combinedBag = parts.map(p => p.bag).filter(Boolean).join(', ') || '';
+          await gasPost({ action: 'submit', cartonId, cartonRef, partNo: allPartNos, pi: formState.cartonPi || '', qty: formState.cartonQty || 1, bag: combinedBag, inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: true, innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch), imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
+        } else {
+          for (const part of parts) {
+            await gasPost({ action: 'submit', cartonId, cartonRef, partNo: part.partNo, pi: part.pi, qty: part.qty, bag: part.bag, inner: part.inner, outer: part.outer, bagMatch: part.bagMatch, innerMatch: part.innerMatch, outerMatch: part.outerMatch, imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
+          }
+        }
+      } catch(e) { console.warn('Log submit warning:', e); }
+    }
+
+    resetForm();
+    renderForm();
+    toast('Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
+    isSubmitting = false;
+    setButtonLoading('btn-submit', false);
+  };
+
+  load();
+})();
+</script>
+</body>
+</html>
