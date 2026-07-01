@@ -82,23 +82,28 @@
     }
   }
 
-  function renderLists() {
+    function renderLists() {
     document.getElementById('lists-count').textContent = LISTS.length + ' list' + (LISTS.length !== 1 ? 's' : '');
     const tbody = document.getElementById('lists-tbody');
     if (LISTS.length === 0) {
       tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg><use href="#ic-list"/></svg><p>No packing lists yet \u2014 click New List</p></div></td></tr>';
       return;
     }
-    tbody.innerHTML = LISTS.map(l => `
+    tbody.innerHTML = LISTS.map(l => {
+      const statusClass = l.status === 'open' ? 'badge-green' :
+                          l.status === 'completed' ? 'badge-blue' :
+                          l.status === 'has rejected' ? 'badge-red' :
+                          l.status === 'partial' ? 'badge-amber' : 'badge-muted';
+      return `
       <tr class="clickable" onclick="goToList('${l.listRef}')">
         <td data-label="Ref" class="font-bold text-primary">${escHtml(l.listRef)}</td>
         <td data-label="Customer">${escHtml(l.customer)}</td>
         <td data-label="Packed By"><div class="text-sm">${escHtml(l.createdBy)}</div><div class="text-xs text-muted">${escHtml(l.team)}</div></td>
-        <td data-label="Status"><span class="badge ${l.status==='open'?'badge-green':l.status==='completed'?'badge-blue':'badge-muted'}">${l.status}</span></td>
+        <td data-label="Status"><span class="badge ${statusClass}">${l.status}</span></td>
         <td data-label="Created" class="text-xs text-muted">${fmtDate(l.createdAt)}</td>
         <td><svg style="width:14px;height:14px;color:var(--muted-fg)"><use href="#ic-arrow-right"/></svg></td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
 
