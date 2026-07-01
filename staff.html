@@ -529,7 +529,8 @@
       const kitQty = parseInt(formState.cartonQty) || 1;
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: kitPi, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
     } else {
-      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch), photos: p.photos || { bag: null, inner: null, outer: null } }));
+      // FIX: do NOT send photos inside parts — they are uploaded separately as imgBagUrl/imgInnerUrl/imgCartonUrl
+      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch) }));
     }
 
     const submitCartonRef = editMode ? editCartonRef : cartonRef;
