@@ -72,6 +72,19 @@
     const openLists = lists.filter(l => l.status === 'open');
     staffSelectedList = openLists.length > 0 ? openLists[0] : null;
 
+    // Check for pending edit from Reject List
+    try {
+      const pendingEdit = localStorage.getItem('mg_pending_edit');
+      if (pendingEdit) {
+        const pe = JSON.parse(pendingEdit);
+        localStorage.removeItem('mg_pending_edit');
+        const targetList = lists.find(l => l.listRef === pe.listRef);
+        if (targetList) staffSelectedList = targetList;
+        // Pre-fill carton ID if available
+        if (pe.cartonId) { formState.cartonId = pe.cartonId; }
+      }
+    } catch(e) {}
+
     let html = `
     <div class="card" style="padding:14px 18px;margin-bottom:16px">
       <div class="form-group" style="margin:0">

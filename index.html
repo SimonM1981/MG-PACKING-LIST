@@ -84,10 +84,7 @@
     `).join('');
   }
 
-  window.goToList = function(listRef) {
-    var base = GAS_URL.replace(/\?.*$/, '').replace(/\/exec$/, '/exec');
-    window.location.href = base + '?page=list&ref=' + encodeURIComponent(listRef);
-  };
+
 
   window.showCreateList = function() {
     const el = document.getElementById('create-list-form');
