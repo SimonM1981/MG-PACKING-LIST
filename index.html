@@ -55,14 +55,31 @@
 <script>
 (function() {
   initSidebar('index');
+  let isSubmitting = false;
+  var LISTS = [];
 
   async function loadLists() {
-    const res = await gasGet({ action: 'packingLists' });
-    LISTS = (res && res.lists) ? res.lists : [];
-    if (LISTS.length > 0) {
-      try { localStorage.setItem('mg_lists_cache', JSON.stringify(LISTS)); localStorage.setItem('mg_lists_cache_time', String(Date.now())); } catch(e){}
+    // Show cached data immediately for fast perceived load
+    let cached = [];
+    try {
+      const c = localStorage.getItem('mg_lists_cache');
+      if (c) cached = JSON.parse(c);
+    } catch(e) {}
+    if (cached.length > 0) {
+      LISTS = cached;
+      renderLists();
     }
-    renderLists();
+    // Fetch fresh data in background
+    let fresh = null;
+    try { fresh = await gasGet({ action: 'packingLists' }); } catch(e) {}
+    if (fresh && fresh.lists) {
+      LISTS = fresh.lists;
+      try { localStorage.setItem('mg_lists_cache', JSON.stringify(LISTS)); localStorage.setItem('mg_lists_cache_time', String(Date.now())); } catch(e){}
+      renderLists();
+    } else if (!cached.length) {
+      LISTS = [];
+      renderLists();
+    }
   }
 
   function renderLists() {

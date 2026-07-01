@@ -53,6 +53,10 @@
   let lookupCache = {};
   const lookupDebounce = {};
   let isSubmitting = false;
+  let editMode = false;
+  let editCartonRows = [];
+  let editLogRows = [];
+  let editCartonRef = '';
 
   async function load() {
     let lists = null;
@@ -73,15 +77,14 @@
     staffSelectedList = openLists.length > 0 ? openLists[0] : null;
 
     // Check for pending edit from Reject List
+    let pendingEdit = null;
     try {
-      const pendingEdit = localStorage.getItem('mg_pending_edit');
-      if (pendingEdit) {
-        const pe = JSON.parse(pendingEdit);
+      const peRaw = localStorage.getItem('mg_pending_edit');
+      if (peRaw) {
+        pendingEdit = JSON.parse(peRaw);
         localStorage.removeItem('mg_pending_edit');
-        const targetList = lists.find(l => l.listRef === pe.listRef);
+        const targetList = lists.find(l => l.listRef === pendingEdit.listRef);
         if (targetList) staffSelectedList = targetList;
-        // Pre-fill carton ID if available
-        if (pe.cartonId) { formState.cartonId = pe.cartonId; }
       }
     } catch(e) {}
 
@@ -107,9 +110,62 @@
 
     if (staffSelectedList) {
       resetForm();
+      if (pendingEdit && pendingEdit.cartonId) {
+        await loadEditMode(pendingEdit);
+      }
       renderForm();
     } else {
       document.getElementById('entry-form-wrap').innerHTML = `<div class="alert alert-amber"><svg><use href="#ic-alert"/></svg><div>No open packing lists. Ask supervisor to create one.</div></div>`;
+    }
+  }
+
+  async function loadEditMode(pe) {
+    editMode = true;
+    editCartonRows = pe.cartonRows || [];
+    editLogRows = pe.logRows || [];
+    formState.cartonId = pe.cartonId || '';
+    toast('Loading carton data for editing...', 'success');
+    try {
+      const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
+      if (res && res.cartons && res.cartons.length > 0) {
+        const carton = res.cartons[0];
+        // Extract CARTON_TAB row numbers from all matching cartons
+        editCartonRows = res.cartons.map(c => c.row).filter(Boolean);
+        editCartonRef = carton.cartonRef || '';
+        formState.cartonId = carton.cartonId || pe.cartonId || '';
+        formState.cartonType = carton.cartonType || 'single';
+        formState.cartonPi = carton.cartonPI || '';
+        formState.cartonQty = carton.cartonQty || '1';
+        if (carton.cartonInner !== undefined) formState.cartonInner = carton.cartonInner || '';
+        if (carton.cartonOuter !== undefined) formState.cartonOuter = carton.cartonOuter || '';
+        formState.cartonInnerMatch = carton.cartonInnerMatch ? true : (formState.cartonInner === 'NO' || formState.cartonInner === '' ? 'no' : null);
+        formState.cartonOuterMatch = carton.cartonOuterMatch ? true : (formState.cartonOuter === 'NO' || formState.cartonOuter === '' ? 'no' : null);
+        // Photos
+        if (carton.imgBagUrl) formState.cartonPhotos.allParts = carton.imgBagUrl;
+        if (carton.imgInnerUrl) formState.cartonPhotos.innerBox = carton.imgInnerUrl;
+        if (carton.imgCartonUrl) formState.cartonPhotos.cartonLabel = carton.imgCartonUrl;
+        // Parts
+        if (carton.parts && carton.parts.length > 0) {
+          formState.parts = carton.parts.map(p => ({
+            partNo: p.partNo || '', pi: p.pi || '', qty: String(p.qty || '1'),
+            bag: p.bag || '', inner: p.inner || '', outer: p.outer || '',
+            bagMatch: p.bagMatch === true || p.bagMatch === 'no' ? 'no' : (p.bagMatch === true ? true : (p.bag ? false : null)),
+            innerMatch: p.innerMatch === true ? true : (p.innerMatch === 'no' ? 'no' : (p.inner ? false : null)),
+            outerMatch: p.outerMatch === true ? true : (p.outerMatch === 'no' ? 'no' : (p.outer ? false : null)),
+            photos: p.photos || { bag: null, inner: null, outer: null }
+          }));
+        } else {
+          formState.parts = [];
+          addPart();
+        }
+        toast('Carton loaded \u2014 review and resubmit', 'success');
+      } else {
+        toast('Could not load carton data \u2014 starting fresh', 'error');
+        editMode = false;
+      }
+    } catch(e) {
+      toast('Error loading carton: ' + e.message, 'error');
+      editMode = false;
     }
   }
 
@@ -151,9 +207,10 @@
 
     wrap.innerHTML = `
     <div class="form-panel" id="entry-form">
-      <div class="form-panel-header primary-bg">
-        <span class="font-bold text-primary text-sm" style="text-transform:uppercase;letter-spacing:.07em">
-          <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px"><use href="#ic-box"/></svg>New Carton \u2014 ${escHtml(staffSelectedList.listRef)}
+      <div class="form-panel-header ${editMode?'danger-bg':'primary-bg'}">
+        <span class="font-bold text-${editMode?'danger':'primary'} text-sm" style="text-transform:uppercase;letter-spacing:.07em">
+          <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px"><use href="#ic-box"/></svg>${editMode?'Edit Carton':'New Carton'} \u2014 ${escHtml(staffSelectedList.listRef)}
+          ${editMode?'<span class="badge badge-red" style="margin-left:8px;font-size:10px">EDIT MODE</span>':''}
         </span>
       </div>
       <div class="info-row">
@@ -452,9 +509,17 @@
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch), photos: p.photos || { bag: null, inner: null, outer: null } }));
     }
 
-    const cartonSaveData = { listRef: staffSelectedList.listRef, cartonRef, cartonId, cartonType: formState.cartonType, cartonPI: formState.cartonPi, cartonQty: formState.cartonQty, parts, imgBagUrl, imgInnerUrl, imgCartonUrl, createdAt: now, status: 'pending' };
+    const submitCartonRef = editMode ? editCartonRef : cartonRef;
+    const cartonSaveData = { listRef: staffSelectedList.listRef, cartonRef: submitCartonRef, cartonId, cartonType: formState.cartonType, cartonPI: formState.cartonPi, cartonQty: formState.cartonQty, parts, imgBagUrl, imgInnerUrl, imgCartonUrl, createdAt: now, status: 'pending' };
     if (isKit) { cartonSaveData.cartonInner = cleanBC(formState.cartonInner); cartonSaveData.cartonOuter = cleanBC(formState.cartonOuter); cartonSaveData.cartonInnerMatch = matchBool(formState.cartonInnerMatch); cartonSaveData.cartonOuterMatch = matchBool(formState.cartonOuterMatch); }
-    const cartonRes = await gasPost({ action: 'saveCarton', ...cartonSaveData });
+    // In edit mode, update existing Carton sheet row(s) instead of creating new ones
+    if (editMode && editCartonRows.length > 0) {
+      for (const rowNum of editCartonRows) {
+        await gasPost({ action: 'saveCarton', ...cartonSaveData, row: rowNum });
+      }
+    } else {
+      await gasPost({ action: 'saveCarton', ...cartonSaveData });
+    }
 
     // Submit to packing log
     if (GAS_URL) {
@@ -462,18 +527,28 @@
         if (isKit) {
           const allPartNos = parts.map(p => p.partNo).join(', ');
           const combinedBag = parts.map(p => p.bag).filter(Boolean).join(', ') || '';
-          await gasPost({ action: 'submit', cartonId, cartonRef, partNo: allPartNos, pi: formState.cartonPi || '', qty: formState.cartonQty || 1, bag: combinedBag, inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: true, innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch), imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
+          await gasPost({ action: 'submit', cartonId, cartonRef: submitCartonRef, partNo: allPartNos, pi: formState.cartonPi || '', qty: formState.cartonQty || 1, bag: combinedBag, inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: true, innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch), imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
         } else {
           for (const part of parts) {
-            await gasPost({ action: 'submit', cartonId, cartonRef, partNo: part.partNo, pi: part.pi, qty: part.qty, bag: part.bag, inner: part.inner, outer: part.outer, bagMatch: part.bagMatch, innerMatch: part.innerMatch, outerMatch: part.outerMatch, imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
+            await gasPost({ action: 'submit', cartonId, cartonRef: submitCartonRef, partNo: part.partNo, pi: part.pi, qty: part.qty, bag: part.bag, inner: part.inner, outer: part.outer, bagMatch: part.bagMatch, innerMatch: part.innerMatch, outerMatch: part.outerMatch, imgBagUrl, imgInnerUrl, imgCartonUrl, customer: staffSelectedList.customer, packedBy: staffSelectedList.createdBy, checkerBy: '', packedDate: '' });
           }
         }
       } catch(e) { console.warn('Log submit warning:', e); }
     }
 
+    // If in edit mode, delete old rejected LOG rows to prevent duplicates
+    const wasEditMode = editMode;
+    if (editMode && editLogRows.length > 0) {
+      try { await gasPost({ action: 'deleteLogRows', rows: editLogRows }); } catch(e) { console.warn('Failed to clean up old log rows:', e); }
+    }
+
     resetForm();
+    editMode = false;
+    editCartonRows = [];
+    editLogRows = [];
+    editCartonRef = '';
     renderForm();
-    toast('Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
+    toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
     isSubmitting = false;
     setButtonLoading('btn-submit', false);
   };

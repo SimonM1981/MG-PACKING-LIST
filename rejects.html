@@ -108,7 +108,7 @@
     if (!foundList) foundList = lists.find(l => (l.customer || '').toLowerCase().includes(customerLower));
     if (!foundList) { toast('Packing list not found for: ' + customer, 'error'); return; }
     toast('Opening packing list...', 'success');
-    localStorage.setItem('mg_pending_edit', JSON.stringify({ listRef: foundList.listRef, cartonId: cartonId, gasRows: rowNums.split(',').map(Number).filter(Boolean) }));
+    localStorage.setItem('mg_pending_edit', JSON.stringify({ listRef: foundList.listRef, cartonId: cartonId, logRows: rowNums.split(',').map(Number).filter(Boolean), gasRows: rowNums.split(',').map(Number).filter(Boolean) }));
     goTo('staff');
   };
 
