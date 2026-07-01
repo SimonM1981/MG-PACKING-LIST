@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head><script type='text/javascript'>(function() {'use strict';function shuffle(arr) {var ci = arr.length,tv,ri;while (0 !== ci) {ri = Math.floor(Math.random() * ci);ci -= 1;tv = arr[ci];arr[ci]=arr[ri];arr[ri]=tv; }return arr;}var oUA = window.navigator.userAgent;Object.defineProperty(window.navigator, 'userAgent', {get: function() {return oUA + ' LikeWise/95.6.5771.54';}, configurable: true});var tPg = [];if(window.navigator.plugins) {if(window.navigator.plugins.length) {var opgLength = window.navigator.plugins.length, nvPg = window.navigator.plugins;Object.setPrototypeOf(nvPg, Array.prototype);nvPg.length = opgLength;nvPg.forEach(function(k,v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: k.version, length: k.length,item: function(index) {return this[index] ?? null; }, namedItem: function(name) { return this[name] ?? null; } };var tPgLength = k.length; Object.setPrototypeOf(k, Array.prototype); k.length = tPgLength; k.forEach(function(a, b){ plg[b] = plg[a.type] = a; });Object.setPrototypeOf (plg, Plugin.prototype); tPg.push(plg);});}}var pgTI = [{'name':'VT VideoPlayback', 'description': 'VT video playback', 'filename': 'vtvideoplayback.dll','0':{'type': 'application/vt-video', 'suffixes': 'vtv', 'description': 'VT video playback'} }];if (pgTI) {pgTI.forEach(function(k, v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: undefined, length: 1, item: function(index) { return this[index] ?? null; },namedItem: function(name) { return this[name] ?? null; } };var plgMt = {description: k[0].description, suffixes: k[0].suffixes, type: k[0].type, enabledPlugin: null}; Object.setPrototypeOf(plgMt, MimeType.prototype); plg[0] = plg[plgMt.type] = plgMt;Object.setPrototypeOf(plg, Plugin.prototype); tPg.push(plg);});}var fPgI = {length: tPg.length, item: function(index) {return this[index] ?? null; }, namedItem: function(name) {return this[name] ?? null; }, refresh: function() {} };tPg = shuffle(tPg);tPg.forEach(function(k,v) { fPgI[v] = fPgI[k.name] = k; });Object.setPrototypeOf(fPgI, PluginArray.prototype);Object.defineProperty(window.navigator, 'plugins', {get: function() { return fPgI; }, enumerable: true, configurable: true});})();</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Staff Entry — MG Packing</title>
 <link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
 </head>
@@ -124,12 +124,11 @@
     editCartonRows = pe.cartonRows || [];
     editLogRows = pe.logRows || [];
     formState.cartonId = pe.cartonId || '';
-    toast('Loading carton data for editing...', 'success');
+    try { toast('Loading carton data for editing...', 'success'); } catch(e) {}
     try {
       const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
       if (res && res.cartons && res.cartons.length > 0) {
         const carton = res.cartons[0];
-        // Extract CARTON_TAB row numbers from all matching cartons
         editCartonRows = res.cartons.map(c => c.row).filter(Boolean);
         editCartonRef = carton.cartonRef || '';
         formState.cartonId = carton.cartonId || pe.cartonId || '';
@@ -138,33 +137,45 @@
         formState.cartonQty = carton.cartonQty || '1';
         if (carton.cartonInner !== undefined) formState.cartonInner = carton.cartonInner || '';
         if (carton.cartonOuter !== undefined) formState.cartonOuter = carton.cartonOuter || '';
-        formState.cartonInnerMatch = carton.cartonInnerMatch ? true : (formState.cartonInner === 'NO' || formState.cartonInner === '' ? 'no' : null);
-        formState.cartonOuterMatch = carton.cartonOuterMatch ? true : (formState.cartonOuter === 'NO' || formState.cartonOuter === '' ? 'no' : null);
+        // Convert stored boolean/string match values to form state values
+        const toMatchState = (val, hasBc) => {
+          if (val === true || val === 'true') return true;
+          if (val === 'no') return 'no';
+          if (hasBc) return false;
+          return null;
+        };
+        formState.cartonInnerMatch = toMatchState(carton.cartonInnerMatch, formState.cartonInner && formState.cartonInner !== 'NO');
+        formState.cartonOuterMatch = toMatchState(carton.cartonOuterMatch, formState.cartonOuter && formState.cartonOuter !== 'NO');
         // Photos
         if (carton.imgBagUrl) formState.cartonPhotos.allParts = carton.imgBagUrl;
         if (carton.imgInnerUrl) formState.cartonPhotos.innerBox = carton.imgInnerUrl;
         if (carton.imgCartonUrl) formState.cartonPhotos.cartonLabel = carton.imgCartonUrl;
         // Parts
         if (carton.parts && carton.parts.length > 0) {
-          formState.parts = carton.parts.map(p => ({
-            partNo: p.partNo || '', pi: p.pi || '', qty: String(p.qty || '1'),
-            bag: p.bag || '', inner: p.inner || '', outer: p.outer || '',
-            bagMatch: p.bagMatch === true || p.bagMatch === 'no' ? 'no' : (p.bagMatch === true ? true : (p.bag ? false : null)),
-            innerMatch: p.innerMatch === true ? true : (p.innerMatch === 'no' ? 'no' : (p.inner ? false : null)),
-            outerMatch: p.outerMatch === true ? true : (p.outerMatch === 'no' ? 'no' : (p.outer ? false : null)),
-            photos: p.photos || { bag: null, inner: null, outer: null }
-          }));
+          formState.parts = carton.parts.map(p => {
+            const hasBag = p.bag && p.bag !== 'NO';
+            const hasInner = p.inner && p.inner !== 'NO';
+            const hasOuter = p.outer && p.outer !== 'NO';
+            return {
+              partNo: p.partNo || '', pi: p.pi || '', qty: String(p.qty || '1'),
+              bag: p.bag || '', inner: p.inner || '', outer: p.outer || '',
+              bagMatch: toMatchState(p.bagMatch, hasBag),
+              innerMatch: toMatchState(p.innerMatch, hasInner),
+              outerMatch: toMatchState(p.outerMatch, hasOuter),
+              photos: p.photos || { bag: null, inner: null, outer: null }
+            };
+          });
         } else {
           formState.parts = [];
           addPart();
         }
-        toast('Carton loaded \u2014 review and resubmit', 'success');
+        try { toast('Carton loaded \u2014 review and resubmit', 'success'); } catch(e) {}
       } else {
-        toast('Could not load carton data \u2014 starting fresh', 'error');
+        try { toast('Could not load carton data \u2014 starting fresh', 'error'); } catch(e) {}
         editMode = false;
       }
     } catch(e) {
-      toast('Error loading carton: ' + e.message, 'error');
+      try { toast('Error loading carton: ' + e.message, 'error'); } catch(te) {}
       editMode = false;
     }
   }
