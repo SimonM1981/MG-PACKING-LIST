@@ -122,22 +122,61 @@ function setButtonLoading(btnId, loading) {
 }
 
 /* ── IMAGE COMPRESSION ── */
-function compressImage(file, maxPx, q) {
-  maxPx = maxPx || 800; q = q || 0.68;
-  return new Promise((res, rej) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let w = img.width, h = img.height;
-      if (w > h && w > maxPx) { h = Math.round(h * maxPx / w); w = maxPx; } else if (h > maxPx) { w = Math.round(w * maxPx / h); h = maxPx; }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      res(c.toDataURL('image/jpeg', q));
+function compressImage(file, maxKB) {
+  maxKB = maxKB || 60;
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      reject(new Error('Not an image file'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        let maxDim = 1200;
+        let quality = 0.85;
+        const minQuality = 0.15;
+        const stepQuality = 0.05;
+        const targetBytes = maxKB * 1024;
+
+        function tryCompress() {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const head = 'data:image/jpeg;base64,';
+          const size = Math.round((dataUrl.length - head.length) * 3 / 4);
+
+          if (size <= targetBytes || (quality <= minQuality && maxDim <= 400)) {
+            resolve(dataUrl);
+            return;
+          }
+
+          if (quality > minQuality) {
+            quality = Math.max(minQuality, quality - stepQuality);
+          } else {
+            quality = 0.85;
+            maxDim = Math.round(maxDim * 0.8);
+            if (maxDim < 400) maxDim = 400;
+          }
+          setTimeout(tryCompress, 0);
+        }
+        tryCompress();
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = e.target.result;
     };
-    img.onerror = rej;
-    img.src = url;
+    reader.onerror = () => reject(new Error('File read failed'));
+    reader.readAsDataURL(file);
   });
 }
 
@@ -190,17 +229,14 @@ function closeCamera() {
 function goTo(page) {
   var target;
   if (IS_GITHUB_PAGES) {
-    // On GitHub Pages: navigate to local HTML files
     var pageMap = { index: 'index.html', staff: 'staff.html', checker: 'checker.html', transfer: 'transfer.html', rejects: 'rejects.html', missing: 'missing.html' };
     target = './' + (pageMap[page] || page + '.html');
   } else {
-    // On GAS: use page parameter
     var base = GAS_URL.replace(/\?.*$/, '').replace(/\/exec$/, '/exec');
     target = base + '?page=' + page;
   }
   window.location.href = target;
 }
-// For list detail navigation
 function goToList(listRef) {
   if (IS_GITHUB_PAGES) {
     window.location.href = './list.html?ref=' + encodeURIComponent(listRef);
