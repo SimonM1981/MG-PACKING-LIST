@@ -1050,13 +1050,22 @@ function initSidebar(currentPage) {
         maybeUpload(formState.cartonPhotos.cartonLabel, 'kit_carton_' + cartonId + '_' + Date.now() + '.jpg'),
       ]);
     } else {
-      const firstPart = formState.parts[0];
-      const firstPhotos = firstPart.photos || { bag: null, inner: null, outer: null };
-      [imgBagUrl, imgInnerUrl, imgCartonUrl] = await Promise.all([
-        maybeUpload(firstPhotos.bag, 'bag_' + cartonId + '_' + Date.now() + '.jpg'),
-        maybeUpload(firstPhotos.inner, 'inner_' + cartonId + '_' + Date.now() + '.jpg'),
-        maybeUpload(firstPhotos.outer, 'carton_' + cartonId + '_' + Date.now() + '.jpg'),
-      ]);
+      // Upload photos for EVERY part (was previously only part 1)
+      for (let i = 0; i < formState.parts.length; i++) {
+        const p = formState.parts[i];
+        const photos = p.photos || { bag: null, inner: null, outer: null };
+        const [bagUrl, innerUrl, outerUrl] = await Promise.all([
+          maybeUpload(photos.bag, 'bag_' + cartonId + '_p' + (i + 1) + '_' + Date.now() + '.jpg'),
+          maybeUpload(photos.inner, 'inner_' + cartonId + '_p' + (i + 1) + '_' + Date.now() + '.jpg'),
+          maybeUpload(photos.outer, 'carton_' + cartonId + '_p' + (i + 1) + '_' + Date.now() + '.jpg'),
+        ]);
+        // Store the real Drive URLs back on the part so they get saved in PartsJSON
+        p.photos = { bag: bagUrl || '', inner: innerUrl || '', outer: outerUrl || '' };
+      }
+      const firstPhotos = formState.parts[0].photos || {};
+      imgBagUrl = firstPhotos.bag || '';
+      imgInnerUrl = firstPhotos.inner || '';
+      imgCartonUrl = firstPhotos.outer || '';
     }
 
     const now = new Date().toISOString();
@@ -1074,7 +1083,7 @@ function initSidebar(currentPage) {
       const kitQty = parseInt(formState.cartonQty) || 1;
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: kitPi, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
     } else {
-      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch) }));
+      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch), photos: p.photos || { bag: '', inner: '', outer: '' } }));
     }
 
     const recordData = {
