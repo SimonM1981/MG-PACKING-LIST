@@ -1,220 +1,334 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>List Detail — MG Packing</title>
-<link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Packing List — MG Packing</title>
+<style>
+[data-theme="dark"] {
+  --bg:#0d0d0d;--bg-elevated:#121318;--card:#16181c;--border:#262830;--muted:#1e2028;
+  --text:#ececec;--text-secondary:#a0a4b0;--muted-fg:#7a7f8a;--primary:#5B7CF5;--primary-dim:rgba(91,124,245,.14);
+  --primary-border:rgba(91,124,245,.35);--danger:#ef4444;--danger-dim:rgba(239,68,68,.12);
+  --danger-border:rgba(239,68,68,.35);--amber:#f59e0b;--amber-dim:rgba(245,158,11,.12);
+  --amber-border:rgba(245,158,11,.35);--blue:#5B7CF5;--blue-dim:rgba(91,124,245,.12);
+  --green:#22c55e;--green-dim:rgba(34,197,94,.12);--green-border:rgba(34,197,94,.35);
+  --input-bg:#16181c;--overlay:rgba(0,0,0,.88);--scan-bg:#000;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);--shadow:0 8px 32px rgba(0,0,0,.4);
+  --toast-bg:#16181c;--hover-overlay:rgba(255,255,255,.02);
+}
+[data-theme="light"] {
+  --bg:#f1f3f7;--bg-elevated:#ffffff;--card:#ffffff;--border:#d8dbe3;--muted:#eef0f4;
+  --text:#1a1d29;--text-secondary:#4a4f5e;--muted-fg:#6b7280;--primary:#3b5bdb;--primary-dim:rgba(59,91,219,.1);
+  --primary-border:rgba(59,91,219,.25);--danger:#dc2626;--danger-dim:rgba(220,38,38,.08);
+  --danger-border:rgba(220,38,38,.25);--amber:#d97706;--amber-dim:rgba(217,119,6,.08);
+  --amber-border:rgba(217,119,6,.25);--blue:#3b5bdb;--blue-dim:rgba(59,91,219,.08);
+  --green:#16a34a;--green-dim:rgba(22,163,74,.08);--green-border:rgba(22,163,74,.25);
+  --input-bg:#ffffff;--overlay:rgba(0,0,0,.65);--scan-bg:#1a1d29;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.08);--shadow:0 8px 32px rgba(0,0,0,.12);
+  --toast-bg:#ffffff;--hover-overlay:rgba(0,0,0,.02);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;--font-mono:'SF Mono',Monaco,'Cascadia Code',monospace;--radius:14px;--radius-sm:10px}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;transition:background-color .25s ease,color .2s ease}
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:230px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;box-shadow:var(--shadow-sm);transition:background-color .25s ease,border-color .25s ease}
+#main{flex:1;overflow-y:auto;padding:24px 28px;-webkit-overflow-scrolling:touch;background:var(--bg);transition:background-color .25s ease}
+@media(max-width:768px){
+  #app{flex-direction:column;height:100vh;height:100dvh}
+  #sidebar{position:fixed;bottom:0;left:0;right:0;width:100%;flex-direction:row;flex-wrap:nowrap;height:64px;z-index:50;border-right:none;border-top:1px solid var(--border);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgba(255,255,255,.92);backdrop-filter:blur(10px)}
+  [data-theme="dark"] #sidebar{background:rgba(22,24,28,.95)}
+  #sidebar .brand,#sidebar .section-label{display:none}
+  #sidebar .theme-toggle{position:static;margin:0 8px;align-self:center;flex-shrink:0}
+  #sidebar nav{display:flex;flex-direction:row;flex:1;justify-content:space-around;align-items:center;min-width:max-content;padding:0 8px}
+  #sidebar nav a{flex-direction:column;gap:3px;padding:8px 8px;margin:0;font-size:10px;letter-spacing:.04em;white-space:nowrap;border-bottom:3px solid transparent}
+  #sidebar nav a svg{width:20px;height:20px}
+  #main{padding:16px 16px 80px 16px}
+}
+.brand{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.brand-name{font-weight:800;font-size:17px;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-family:var(--font-mono)}
+.brand-sub{font-size:10px;color:var(--muted-fg);letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
+.section-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);padding:16px 16px 6px;font-weight:600}
+nav a{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin:3px 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-fg);transition:all .15s;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent;text-decoration:none}
+nav a svg{width:16px;height:16px;flex-shrink:0}
+nav a:hover{background:var(--muted);color:var(--text)}
+nav a.active{background:var(--primary-dim);color:var(--primary);border-bottom-color:var(--primary)}
+nav a.danger{color:var(--danger)}
+.theme-toggle{position:relative;width:44px;height:24px;border-radius:12px;background:var(--muted);border:1.5px solid var(--border);cursor:pointer;transition:all .25s ease;display:flex;align-items:center;padding:0 3px;flex-shrink:0}
+.theme-toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--primary);transition:transform .3s cubic-bezier(.4,0,.2,1),background .25s ease;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+[data-theme="light"] .theme-toggle::after{transform:translateX(20px);background:#f59e0b}
+.theme-toggle svg{position:absolute;width:11px;height:11px;transition:opacity .25s ease;pointer-events:none}
+.theme-toggle .moon{left:5px;opacity:1}[data-theme="light"] .theme-toggle .moon{opacity:0}
+.theme-toggle .sun{right:5px;opacity:0}[data-theme="light"] .theme-toggle .sun{opacity:1}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px;font-family:var(--font-mono)}
+.page-subtitle{font-size:12px;color:var(--muted-fg);margin-top:4px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:22px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm)}
+.stat-card .label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:600}
+.stat-card .value{font-size:18px;font-weight:700;margin-top:4px;color:var(--text)}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:var(--green-border)}
+.badge-red{background:var(--danger-dim);color:var(--danger);border-color:var(--danger-border)}
+.badge-amber{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-border)}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,.35)}
+.badge-muted{background:var(--muted);color:var(--muted-fg);border-color:var(--border)}
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:var(--shadow-sm)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--muted)}
+th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-fg);padding:10px 12px;text-align:left;white-space:nowrap;font-weight:700}
+td{padding:10px 12px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;color:var(--text)}
+tr:hover td{background:var(--hover-overlay)}
+tr.rejected td{border-left:3px solid var(--danger)}
+tr.verified td{border-left:3px solid var(--green)}
+.empty-state{text-align:center;padding:48px 16px;color:var(--muted-fg)}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--muted-fg);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .15s;cursor:pointer;touch-action:manipulation;min-height:36px;background:var(--primary);color:#fff}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+.text-primary{color:var(--primary)}.text-danger{color:var(--danger)}.text-amber{color:var(--amber)}.text-green{color:var(--green)}.text-muted{color:var(--muted-fg)}
+.text-sm{font-size:12px}.text-xs{font-size:11px}.font-bold{font-weight:700}
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}
+.hidden{display:none!important}
+.back-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
+.back-btn:hover{border-color:var(--primary);color:var(--primary)}
+.barcode-dot{font-size:11px;font-weight:700}
+.barcode-dot.ok{color:var(--green)}.barcode-dot.fail{color:var(--danger)}
+</style>
 </head>
 <body>
+
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="ic-check-sq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="ic-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
+  <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="ic-transfer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17V3h10v14"/><path d="m3 21 4-4"/><path d="m21 21-4-4"/><path d="M7 13h10"/></symbol>
+  <symbol id="ic-missing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6" stroke-dasharray="2 2"/></symbol>
+  <symbol id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+</svg>
+
 <div id="app">
   <div id="sidebar">
     <div class="brand">
-      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.3</div></div>
     </div>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
-      <svg class="moon"><use href="#ic-moon"/></svg>
-      <svg class="sun"><use href="#ic-sun"/></svg>
+      <svg class="moon" style="position:absolute;left:5px;width:11px;height:11px;opacity:1"><use href="#ic-moon"/></svg>
+      <svg class="sun" style="position:absolute;right:5px;width:11px;height:11px;opacity:0"><use href="#ic-sun"/></svg>
     </button>
     <div class="section-label">Staff</div>
     <nav>
-      <a href="#" data-page="index" onclick="goTo('index');return false"><svg><use href="#ic-list"/></svg>Packing Lists</a>
-      <a href="#" data-page="staff" onclick="goTo('staff');return false"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
+      <a href="index.html" data-page="index"><svg><use href="#ic-list"/></svg>Packing Lists</a>
+      <a href="staff.html" data-page="staff"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
     </nav>
     <div class="section-label">Supervisor</div>
     <nav>
-      <a href="#" data-page="checker" onclick="goTo('checker');return false"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
-      <a href="#" data-page="transfer" onclick="goTo('transfer');return false"><svg><use href="#ic-transfer"/></svg>Transfer</a>
-      <a href="#" data-page="rejects" class="danger" onclick="goTo('rejects');return false"><svg><use href="#ic-alert"/></svg>Reject List</a>
+      <a href="checker.html" data-page="checker"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
+      <a href="transfer.html" data-page="transfer"><svg><use href="#ic-transfer"/></svg>Transfer</a>
+      <a href="rejects.html" data-page="rejects" class="danger"><svg><use href="#ic-alert"/></svg>Reject List</a>
     </nav>
     <div class="section-label">Tools</div>
     <nav>
-      <a href="#" data-page="missing" onclick="goTo('missing');return false"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
+      <a href="missing.html" data-page="missing"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
     </nav>
     <div style="flex:1"></div>
   </div>
   <div id="main">
     <div id="list-content">
-      <div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading list detail...</p></div>
+      <div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading packing list...</p></div>
     </div>
-    <div id="carton-detail-wrap"></div>
   </div>
 </div>
 
 <script>
-(function() {
-  initSidebar('');
+'use strict';
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const listRef = urlParams.get('ref') || '';
-  let LIST = null;
-  let CARTONS = [];
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbyM-KW4verG3fuqT7JEfsg1292ZXNan1Kbi5SsW3PYn7ZplU-waGJJqkGXvEEs8Z-JhNg/exec';
 
-  async function load() {
-    // Load the list
-    const listsRes = await gasGet({ action: 'packingLists' });
-    const lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
-    LIST = lists.find(l => l.listRef === listRef);
-    if (!LIST) {
-      document.getElementById('list-content').innerHTML = '<div class="empty-state"><svg><use href="#ic-alert"/></svg><p>List not found</p><button class="btn btn-primary mt-12" onclick="goTo(\'index\')">Back to Lists</button></div>';
-      return;
-    }
-    const cartonsRes = await gasGet({ action: 'cartons', listRef: listRef, includeStatus: '1' });
-    CARTONS = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
-    render();
+(function initTheme() {
+  const saved = localStorage.getItem('mg-theme');
+  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const theme = saved || (prefersLight ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('mg-theme', next);
+}
+
+function initSidebar(currentPage) {
+  document.querySelectorAll('nav a[data-page]').forEach(a => {
+    if (a.dataset.page === currentPage) a.classList.add('active');
+  });
+}
+
+function escHtml(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function gasGet(params) {
+  if (!GAS_URL) return null;
+  const url = GAS_URL + '?' + new URLSearchParams(params);
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 25000);
+    const r = await fetch(url, { signal: ctrl.signal, redirect: 'follow' });
+    clearTimeout(t);
+    const txt = await r.text();
+    if (!txt || !txt.trim()) return null;
+    if (txt.trim().startsWith('<')) return null;
+    try { return JSON.parse(txt); } catch { return null; }
+  } catch(err) { return null; }
+}
+
+function getThumbUrl(url, size) {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  if (url.includes('drive.google.com') || url.includes('googleusercontent')) {
+    const m = url.match(/[-\w]{25,}/);
+    if (m) return 'https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w' + size;
+  }
+  return url;
+}
+
+function statusBadge(status) {
+  const s = (status || '').toLowerCase();
+  if (s.includes('rejected')) return '<span class="badge badge-red">REJECTED</span>';
+  if (s.includes('verified')) return '<span class="badge badge-green">VERIFIED</span>';
+  if (s.includes('pending')) return '<span class="badge badge-amber">PENDING</span>';
+  if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
+  if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
+  return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
+}
+
+function listStatusBadge(status) {
+  const s = (status || '').toLowerCase();
+  if (s.includes('rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
+  if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
+  if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
+  if (s.includes('open')) return '<span class="badge badge-amber">OPEN</span>';
+  return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
+}
+
+function barcodeDots(rec) {
+  const bag = rec.bagMatch ? '<span class="barcode-dot ok">\u2713</span>' : (rec.bag ? '<span class="barcode-dot fail">\u2717</span>' : '<span class="barcode-dot fail">\u2014</span>');
+  const inner = rec.innerMatch ? '<span class="barcode-dot ok">\u2713</span>' : (rec.inner ? '<span class="barcode-dot fail">\u2717</span>' : '<span class="barcode-dot fail">\u2014</span>');
+  const outer = rec.outerMatch ? '<span class="barcode-dot ok">\u2713</span>' : (rec.outer ? '<span class="barcode-dot fail">\u2717</span>' : '<span class="barcode-dot fail">\u2014</span>');
+  return 'B' + bag + ' I' + inner + ' O' + outer;
+}
+
+function fmtDate(ts) {
+  if (!ts) return '\u2014';
+  const d = new Date(ts);
+  if (isNaN(d)) return String(ts).slice(0,10);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+
+(async function() {
+  initSidebar('index');
+
+  const params = new URLSearchParams(location.search);
+  const listRef = params.get('ref') || '';
+
+  if (!listRef) {
+    document.getElementById('list-content').innerHTML = '<div class="empty-state">No packing list specified.</div>';
+    return;
   }
 
-  function render() {
-    const el = document.getElementById('list-content');
-    const totalParts = CARTONS.reduce((s, c) => s + (c.parts || []).length, 0);
-    const rejected = CARTONS.filter(c => c.status === 'rejected');
+  const [listsRes, cartonsRes] = await Promise.all([
+    gasGet({ action: 'packingLists' }),
+    gasGet({ action: 'cartons', listRef: listRef })
+  ]);
 
-    let html = `
-    <div class="page-header">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="btn-icon" onclick="goTo('index')"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></button>
-        <div>
-          <div class="page-title"><svg><use href="#ic-list"/></svg>${escHtml(LIST.listRef)}</div>
-          <div class="page-subtitle">${escHtml(LIST.customer)} \u2014 ${CARTONS.length} cartons \u2014 ${totalParts} parts total</div>
-        </div>
+  const lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
+  const list = lists.find(l => l.listRef === listRef);
+  const cartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
+
+  if (!list) {
+    document.getElementById('list-content').innerHTML = '<div class="empty-state">Packing list not found.</div>';
+    return;
+  }
+
+  const totalParts = cartons.reduce((sum, c) => {
+    if (c.parts && c.parts.length) return sum + c.parts.length;
+    return sum + 1;
+  }, 0);
+
+  const hasRejected = cartons.some(c => (c.status || '').toLowerCase().includes('rejected'));
+  const allVerified = cartons.length > 0 && cartons.every(c => (c.status || '').toLowerCase().includes('verified'));
+
+  let html = `
+  <div class="page-header" style="align-items:center">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="index.html" class="back-btn"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></a>
+      <div>
+        <div class="page-title"><svg><use href="#ic-list"/></svg>${escHtml(listRef)}</div>
+        <div class="page-subtitle">${escHtml(list.customer)} \u2014 ${cartons.length} carton${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
       </div>
-      <span class="badge ${LIST.status==='open'?'badge-green':LIST.status==='completed'?'badge-blue':'badge-muted'}">${LIST.status}</span>
     </div>
-    <div class="grid-3" style="margin-bottom:16px">
-      <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
-        <svg style="width:18px;height:18px;color:var(--primary)"><use href="#ic-box"/></svg>
-        <div><div class="text-xs text-muted">Customer</div><div class="font-bold text-sm">${escHtml(LIST.customer)}</div></div>
-      </div>
-      <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
-        <svg style="width:18px;height:18px;color:var(--primary)"><use href="#ic-activity"/></svg>
-        <div><div class="text-xs text-muted">Packed By</div><div class="font-bold text-sm">${escHtml(LIST.createdBy)}</div></div>
-      </div>
-      <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
-        <svg style="width:18px;height:18px;color:var(--primary)"><use href="#ic-package"/></svg>
-        <div><div class="text-xs text-muted">Team</div><div class="font-bold text-sm">${escHtml(LIST.team)}</div></div>
-      </div>
-    </div>`;
+    <div>${listStatusBadge(list.status)}</div>
+  </div>
 
-    if (LIST.status === 'completed') {
-      html += `<div class="complete-banner"><div class="complete-title"><svg style="width:16px;height:16px;vertical-align:middle;margin-right:6px"><use href="#ic-check-circle"/></svg>Packing List Completed</div><div class="text-sm text-muted">This list has been finalized.</div></div>`;
+  <div class="stat-grid" style="margin-bottom:22px">
+    <div class="stat-card">
+      <div class="label">Customer</div>
+      <div class="value text-primary">${escHtml(list.customer)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Packed By</div>
+      <div class="value">${escHtml(list.createdBy || '')}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Team</div>
+      <div class="value">${escHtml(list.team || '')}</div>
+    </div>
+  </div>`;
+
+  if (cartons.length === 0) {
+    html += `<div class="empty-state">No cartons in this packing list yet.</div>`;
+  } else {
+    html += `<div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Carton ID</th>
+          <th>P/I No.</th>
+          <th>Part No.</th>
+          <th>Qty</th>
+          <th>Barcodes</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    
+    for (const c of cartons) {
+      const partNoDisplay = c.parts && c.parts.length > 1 
+        ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
+        : escHtml(c.partNo || '');
+      
+      const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
+      
+      html += `<tr class="${rowClass}">
+        <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
+        <td>${escHtml(c.pi || c.cartonPI || '')}</td>
+        <td>${partNoDisplay}</td>
+        <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
+        <td>${barcodeDots(c)}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td class="text-muted">${fmtDate(c.timestamp)}</td>
+      </tr>`;
     }
-
-    if (rejected.length > 0) {
-      html += `<div class="alert alert-danger" style="margin-bottom:16px"><svg><use href="#ic-alert"/></svg><div><strong>${rejected.length} carton${rejected.length>1?'s':''} rejected.</strong> Click Edit on a rejected row to correct.</div></div>`;
-    }
-
-    if (LIST.status === 'open') {
-      html += `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="text-xs text-muted">Carton Entries (${CARTONS.length})</div>
-        <div class="gap-8">
-          <button class="btn btn-outline btn-sm" onclick="goTo('staff')"><svg><use href="#ic-plus"/></svg>Add Carton</button>
-        </div>
-      </div>`;
-    }
-
-    html += `
-    <div class="table-wrap" style="margin-bottom:16px">
-      <table class="table-responsive">
-        <thead><tr><th>Carton ID</th><th>P/I No.</th><th>Part No.</th><th>Qty</th><th>Barcodes</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>
-        ${CARTONS.length === 0 ? '<tr><td colspan="7"><div class="empty-state"><svg><use href="#ic-box"/></svg><p>No entries yet</p></div></td></tr>' :
-          CARTONS.map((c, ci) => {
-            const firstPart = (c.parts || [])[0] || {};
-            const partCount = (c.parts || []).length;
-            const isRejected = c.status === 'rejected';
-            const isVerified = c.status === 'verified';
-            const bagM = firstPart.bagMatch === true || firstPart.bagMatch === 'no';
-            const innerM = firstPart.innerMatch === true || firstPart.innerMatch === 'no';
-            const outerM = firstPart.outerMatch === true || firstPart.outerMatch === 'no';
-            const piVal = c.cartonType === 'kit' ? (c.cartonPI || firstPart.pi || '\u2014') : (firstPart.pi || '\u2014');
-            const qtyVal = c.cartonType === 'kit' ? (c.cartonQty || '\u2014') : (firstPart.qty || '\u2014');
-            const partNoVal = firstPart.partNo || c.partNo || '\u2014';
-            let statusBadge = '<span class="badge badge-amber">PENDING</span>';
-            if (isRejected) statusBadge = '<span class="badge badge-red">REJECTED</span>';
-            else if (isVerified) statusBadge = '<span class="badge badge-green">VERIFIED</span>';
-            return `<tr class="${isRejected ? 'rejected' : 'clickable'}" onclick="${isRejected ? '' : 'viewCarton(' + ci + ')'}">
-              <td data-label="Carton ID" class="font-bold text-primary">${escHtml(c.cartonId || '\u2014')}</td>
-              <td data-label="P/I No." class="text-sm">${escHtml(piVal)}</td>
-              <td data-label="Part No."><span class="font-bold text-sm">${escHtml(partNoVal)}</span>${partCount > 1 ? '<span class="badge badge-muted" style="margin-left:6px">+' + (partCount - 1) + ' more</span>' : ''}</td>
-              <td data-label="Qty" style="text-align:center;font-weight:700;font-family:var(--font-mono)">${escHtml(qtyVal)}</td>
-              <td data-label="Barcodes" style="text-align:center;white-space:nowrap"><span style="color:var(--muted-fg);font-size:11px">B ${bagM ? '<span style="color:var(--green)">\u2713</span>' : '<span style="color:var(--danger)">\u2717</span>'} I ${innerM ? '<span style="color:var(--green)">\u2713</span>' : '<span style="color:var(--danger)">\u2717</span>'} O ${outerM ? '<span style="color:var(--green)">\u2713</span>' : '<span style="color:var(--danger)">\u2717</span>'}</span></td>
-              <td data-label="Status">${statusBadge}</td>
-              <td data-label="Date" class="text-xs text-muted">${fmtDate(c.createdAt)}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>`;
-
-    if (LIST.status === 'open' && CARTONS.length > 0) {
-      html += `
-      <div style="padding:16px;background:var(--card);border:1.5px solid var(--primary-border);border-radius:var(--radius);text-align:center;margin-bottom:16px">
-        <div style="font-size:12px;color:var(--muted-fg);margin-bottom:10px">When all cartons are packed, mark this list as completed.</div>
-        <button class="btn btn-primary" onclick="completeList()"><svg><use href="#ic-check-circle"/></svg>Complete Packing List</button>
-      </div>`;
-    }
-
-    el.innerHTML = html;
+    
+    html += `</tbody></table></div>`;
   }
 
-  window.viewCarton = function(ci) {
-    const c = CARTONS[ci];
-    if (!c) return;
-    const wrap = document.getElementById('carton-detail-wrap');
-    let partsHtml = '';
-    if (c.parts && c.parts.length > 0) {
-      partsHtml = `<div class="section-title">Parts in this Carton (${c.parts.length})</div>
-      <div class="parts-summary" style="margin-bottom:16px"><table><thead><tr><th>#</th><th>Part No</th><th>PI</th><th>Qty</th></tr></thead><tbody>
-      ${c.parts.map((p, pi) => `<tr><td style="font-family:var(--font-mono);font-weight:700">${pi + 1}</td><td class="font-bold text-primary">${escHtml(p.partNo)}</td><td class="text-xs text-muted">${escHtml(p.pi || '\u2014')}</td><td style="font-weight:700">${p.qty}</td></tr>`).join('')}
-      </tbody></table></div>`;
-    }
-    let photoHtml = '';
-    const photos = [
-      { lbl: 'Bag Photo', url: c.imgBagUrl },
-      { lbl: 'Inner Photo', url: c.imgInnerUrl },
-      { lbl: 'Carton Photo', url: c.imgCartonUrl }
-    ].filter(p => p.url);
-    if (photos.length > 0) {
-      photoHtml = `<div class="section-title">Photos \u2014 Tap to zoom</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-        ${photos.map(p => `<div style="text-align:center;cursor:pointer" onclick="openLightbox('${p.url}')"><img src="${getThumbUrl(p.url, 400)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;border:1px solid var(--border)" loading="lazy" /><div style="font-size:10px;color:var(--muted-fg);margin-top:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em">${p.lbl}</div></div>`).join('')}
-      </div>`;
-    }
-
-    wrap.innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)document.getElementById('carton-detail-wrap').innerHTML=''">
-      <div class="modal" style="max-width:560px">
-        <div class="modal-header">
-          <div class="modal-title"><svg style="width:16px;height:16px"><use href="#ic-box"/></svg>${escHtml(c.cartonRef)} Details</div>
-          <button class="btn-icon" onclick="document.getElementById('carton-detail-wrap').innerHTML=''"><svg style="width:14px;height:14px"><use href="#ic-x"/></svg></button>
-        </div>
-        <div class="modal-body">
-          <div class="detail-kv" style="margin-bottom:14px">
-            <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(c.cartonId)}</div></div>
-            <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(LIST.createdBy || '\u2014')}</div></div>
-            <div class="kv-box"><div class="kv-label">Type</div><div class="kv-value">${c.cartonType === 'kit' ? 'KIT' : c.cartonType === 'multiple' ? 'MULTIPLE' : 'SINGLE'}</div></div>
-          </div>
-          ${partsHtml}
-          ${photoHtml}
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-outline btn-full" onclick="document.getElementById('carton-detail-wrap').innerHTML=''">Close</button>
-        </div>
-      </div>
-    </div>`;
-  };
-
-  window.completeList = async function() {
-    const pw = prompt('ENTER PASSWORD TO COMPLETE PACKING LIST:');
-    if (pw === null) return;
-    if (pw !== 'simon1981') { toast('Incorrect password.', 'error'); return; }
-    if (!confirm('Mark this packing list as COMPLETED? Staff will no longer be able to add cartons.')) return;
-    const completedAt = new Date().toISOString();
-    await gasPost({ action: 'updatePackingList', listRef: LIST.listRef, status: 'completed', completedAt });
-    LIST.status = 'completed';
-    toast('Packing list completed! \u2705', 'success');
-    render();
-  };
-
-  load();
+  document.getElementById('list-content').innerHTML = html;
 })();
 </script>
 </body>
