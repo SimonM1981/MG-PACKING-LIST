@@ -212,6 +212,49 @@
       </div>`;
     }).join('');
 
+    // Collect all photos from all records
+    const allPhotos = [];
+    const seenUrls = new Set();
+    for (const r of records) {
+      if (r.imgBagUrl && !seenUrls.has(r.imgBagUrl)) { seenUrls.add(r.imgBagUrl); allPhotos.push({ url: r.imgBagUrl, label: 'Bag' + (records.length > 1 ? ' (' + r.partNo + ')' : '') }); }
+      if (r.imgInnerUrl && !seenUrls.has(r.imgInnerUrl)) { seenUrls.add(r.imgInnerUrl); allPhotos.push({ url: r.imgInnerUrl, label: 'Inner' + (records.length > 1 ? ' (' + r.partNo + ')' : '') }); }
+      if (r.imgCartonUrl && !seenUrls.has(r.imgCartonUrl)) { seenUrls.add(r.imgCartonUrl); allPhotos.push({ url: r.imgCartonUrl, label: 'Carton' + (records.length > 1 ? ' (' + r.partNo + ')' : '') }); }
+    }
+    const photosSection = allPhotos.length > 0 ? `
+      <div class="section-title" style="margin-top:16px">Photos (${allPhotos.length})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px">
+        ${allPhotos.map(p => `<div style="position:relative">
+          <img src="${getThumbUrl(p.url, 400)}" style="width:100%;height:100px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);cursor:pointer" onclick="openLightbox('${p.url}')" loading="lazy" />
+          <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:0 0 var(--radius-sm) var(--radius-sm);text-align:center">${escHtml(p.label)}</div>
+        </div>`).join('')}
+      </div>
+    ` : '';
+
+    // Extra metadata
+    const checkerName = first.checkerBy || '';
+    const remarksVal = first.remarks || '';
+    const rejectionVal = first.rejectionReason || '';
+    const teamVal = first.team || '';
+    const stampedVal = first.stamped || '';
+    const stampedByVal = first.stampedBy || '';
+
+    const metaSection = `
+      <div class="section-title" style="margin-top:16px">Details</div>
+      <div class="detail-kv" style="margin-bottom:16px">
+        <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(first.cartonId || '\u2014')}</div></div>
+        <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(first.packedBy || '\u2014')}</div></div>
+        <div class="kv-box"><div class="kv-label">Total Qty</div><div class="kv-value">${totalQty}</div></div>
+        <div class="kv-box"><div class="kv-label">Parts</div><div class="kv-value">${records.length}</div></div>
+        <div class="kv-box"><div class="kv-label">PI</div><div class="kv-value">${escHtml(first.pi || '\u2014')}</div></div>
+        <div class="kv-box"><div class="kv-label">Date</div><div class="kv-value">${fmtDate(first.timestamp || first.createdAt)}</div></div>
+        ${teamVal ? '<div class="kv-box"><div class="kv-label">Team</div><div class="kv-value">' + escHtml(teamVal) + '</div></div>' : ''}
+        ${checkerName ? '<div class="kv-box"><div class="kv-label">Checker</div><div class="kv-value">' + escHtml(checkerName) + '</div></div>' : ''}
+        ${stampedVal ? '<div class="kv-box"><div class="kv-label">Stamped</div><div class="kv-value">' + escHtml(stampedVal) + (stampedByVal ? ' by ' + escHtml(stampedByVal) : '') + '</div></div>' : ''}
+      </div>
+      ${remarksVal ? '<div style="background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--amber)"><strong>Remarks:</strong> ' + escHtml(remarksVal) + '</div>' : ''}
+      ${rejectionVal ? '<div style="background:var(--danger-dim);border:1px solid var(--danger-border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--danger)"><strong>Rejection Reason:</strong> ' + escHtml(rejectionVal) + '</div>' : ''}
+    `;
+
     const hasPending = records.some(r => { const s = (r.status || '').toLowerCase(); return !s || s === '' || s === 'pending'; });
     const verdictSection = hasPending ? `
       <div class="section-title" style="border-top:1px solid var(--border);padding-top:16px">Checker Decision</div>
@@ -231,15 +274,9 @@
           <button class="btn-icon" onclick="document.getElementById('checker-modal-wrap').innerHTML=''"><svg style="width:14px;height:14px"><use href="#ic-x"/></svg></button>
         </div>
         <div class="modal-body">
-          <div class="detail-kv" style="margin-bottom:16px">
-            <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(first.cartonId || '\u2014')}</div></div>
-            <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(first.packedBy || '\u2014')}</div></div>
-            <div class="kv-box"><div class="kv-label">Total Qty</div><div class="kv-value">${totalQty}</div></div>
-            <div class="kv-box"><div class="kv-label">Parts</div><div class="kv-value">${records.length}</div></div>
-            <div class="kv-box"><div class="kv-label">PI</div><div class="kv-value">${escHtml(first.pi || '\u2014')}</div></div>
-            <div class="kv-box"><div class="kv-label">Date</div><div class="kv-value">${fmtDate(first.timestamp || first.createdAt)}</div></div>
-          </div>
+          ${metaSection}
           ${partsHtml}
+          ${photosSection}
           ${verdictSection}
         </div>
       </div>
