@@ -1,175 +1,273 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Packing Lists — MG Packing</title>
-<link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
+<style>
+[data-theme="dark"] {
+  --bg:#0d0d0d;--bg-elevated:#121318;--card:#16181c;--border:#262830;--muted:#1e2028;
+  --text:#ececec;--text-secondary:#a0a4b0;--muted-fg:#7a7f8a;--primary:#5B7CF5;--primary-dim:rgba(91,124,245,.14);
+  --primary-border:rgba(91,124,245,.35);--danger:#ef4444;--danger-dim:rgba(239,68,68,.12);
+  --danger-border:rgba(239,68,68,.35);--amber:#f59e0b;--amber-dim:rgba(245,158,11,.12);
+  --amber-border:rgba(245,158,11,.35);--blue:#5B7CF5;--blue-dim:rgba(91,124,245,.12);
+  --green:#22c55e;--green-dim:rgba(34,197,94,.12);--green-border:rgba(34,197,94,.35);
+  --input-bg:#16181c;--overlay:rgba(0,0,0,.88);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3);--shadow:0 8px 32px rgba(0,0,0,.4);
+  --hover-overlay:rgba(255,255,255,.04);
+}
+[data-theme="light"] {
+  --bg:#f1f3f7;--bg-elevated:#ffffff;--card:#ffffff;--border:#d8dbe3;--muted:#eef0f4;
+  --text:#1a1d29;--text-secondary:#4a4f5e;--muted-fg:#6b7280;--primary:#3b5bdb;--primary-dim:rgba(59,91,219,.1);
+  --primary-border:rgba(59,91,219,.25);--danger:#dc2626;--danger-dim:rgba(220,38,38,.08);
+  --danger-border:rgba(220,38,38,.25);--amber:#d97706;--amber-dim:rgba(217,119,6,.08);
+  --amber-border:rgba(217,119,6,.25);--blue:#3b5bdb;--blue-dim:rgba(59,91,219,.08);
+  --green:#16a34a;--green-dim:rgba(22,163,74,.08);--green-border:rgba(22,163,74,.25);
+  --input-bg:#ffffff;--overlay:rgba(0,0,0,.65);
+  --shadow-sm:0 2px 8px rgba(0,0,0,.08);--shadow:0 8px 32px rgba(0,0,0,.12);
+  --hover-overlay:rgba(0,0,0,.04);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;--font-mono:'SF Mono',Monaco,'Cascadia Code',monospace;--radius:14px;--radius-sm:10px}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;transition:background-color .25s ease,color .2s ease}
+#app{display:flex;height:100vh;overflow:hidden;background:var(--bg)}
+#sidebar{width:230px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;box-shadow:var(--shadow-sm);transition:background-color .25s ease,border-color .25s ease}
+#main{flex:1;overflow-y:auto;padding:24px 28px;-webkit-overflow-scrolling:touch;background:var(--bg);transition:background-color .25s ease;min-height:100vh}
+@media(max-width:768px){
+  #app{flex-direction:column;height:100vh;height:100dvh}
+  #sidebar{position:fixed;bottom:0;left:0;right:0;width:100%;flex-direction:row;flex-wrap:nowrap;height:64px;z-index:50;border-right:none;border-top:1px solid var(--border);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgba(255,255,255,.92);backdrop-filter:blur(10px)}
+  [data-theme="dark"] #sidebar{background:rgba(22,24,28,.95)}
+  #sidebar .brand,#sidebar .section-label{display:none}
+  #sidebar .theme-toggle{position:static;margin:0 8px;align-self:center;flex-shrink:0}
+  #sidebar nav{display:flex;flex-direction:row;flex:1;justify-content:space-around;align-items:center;min-width:max-content;padding:0 8px}
+  #sidebar nav a{flex-direction:column;gap:3px;padding:8px 8px;margin:0;font-size:10px;letter-spacing:.04em;white-space:nowrap;border-bottom:3px solid transparent}
+  #sidebar nav a svg{width:20px;height:20px}
+  #main{padding:16px 16px 80px 16px}
+}
+.brand{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--card)}
+.brand-name{font-weight:800;font-size:17px;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-family:var(--font-mono)}
+.brand-sub{font-size:10px;color:var(--muted-fg);letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
+.section-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);padding:16px 16px 6px;font-weight:600}
+nav a{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin:3px 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-fg);transition:all .15s;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent;text-decoration:none;background:transparent}
+nav a svg{width:16px;height:16px;flex-shrink:0}
+nav a:hover{background:var(--muted);color:var(--text)}
+nav a.active{background:var(--primary-dim);color:var(--primary);border-bottom-color:var(--primary)}
+nav a.danger{color:var(--danger)}
+.theme-toggle{position:relative;width:44px;height:24px;border-radius:12px;background:var(--muted);border:1.5px solid var(--border);cursor:pointer;transition:all .25s ease;display:flex;align-items:center;padding:0 3px;flex-shrink:0}
+.theme-toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--primary);transition:transform .3s cubic-bezier(.4,0,.2,1),background .25s ease;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+[data-theme="light"] .theme-toggle::after{transform:translateX(20px);background:#f59e0b}
+.theme-toggle svg{position:absolute;width:11px;height:11px;transition:opacity .25s ease;pointer-events:none}
+.theme-toggle .moon{left:5px;opacity:1}[data-theme="light"] .theme-toggle .moon{opacity:0}
+.theme-toggle .sun{right:5px;opacity:0}[data-theme="light"] .theme-toggle .sun{opacity:1}
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap;background:transparent}
+.page-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-mono)}
+.page-subtitle{font-size:12px;color:var(--muted-fg);margin-top:4px}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:var(--green-border)}
+.badge-red{background:var(--danger-dim);color:var(--danger);border-color:var(--danger-border)}
+.badge-amber{background:var(--amber-dim);color:var(--amber);border-color:var(--amber-border)}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,.35)}
+.badge-muted{background:var(--muted);color:var(--muted-fg);border-color:var(--border)}
+.empty-state{text-align:center;padding:48px 16px;color:var(--muted-fg);background:var(--bg)}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--muted-fg);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.text-primary{color:var(--primary)}.text-danger{color:var(--danger)}.text-amber{color:var(--amber)}.text-green{color:var(--green)}.text-muted{color:var(--muted-fg)}
+.text-sm{font-size:12px}.text-xs{font-size:11px}.font-bold{font-weight:700}
+
+/* Tabs */
+.tab-bar{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.tab-btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--border);background:transparent;color:var(--muted-fg);cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--primary-dim);color:var(--primary);border-color:var(--primary-border)}
+.tab-btn:hover:not(.active){background:var(--muted);color:var(--text)}
+
+/* List Cards */
+.list-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.list-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm);cursor:pointer;transition:all .15s;text-decoration:none;display:block;color:var(--text)}
+.list-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--primary-border)}
+.list-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.list-card-ref{font-family:var(--font-mono);font-size:16px;font-weight:800;color:var(--primary)}
+.list-card-meta{font-size:12px;color:var(--muted-fg);line-height:1.6}
+.list-card-meta strong{color:var(--text);font-weight:600}
+.list-card-stats{display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.list-card-stat{text-align:center}
+.list-card-stat .num{font-size:18px;font-weight:700;color:var(--text);display:block}
+.list-card-stat .lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg);margin-top:2px}
+</style>
 </head>
 <body>
+
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="ic-check-sq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
+  <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="ic-transfer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17V3h10v14"/><path d="m3 21 4-4"/><path d="m21 21-4-4"/><path d="M7 13h10"/></symbol>
+  <symbol id="ic-missing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6" stroke-dasharray="2 2"/></symbol>
+  <symbol id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+</svg>
+
 <div id="app">
   <div id="sidebar">
     <div class="brand">
       <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.3</div></div>
     </div>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
-      <svg class="moon"><use href="#ic-moon"/></svg>
-      <svg class="sun"><use href="#ic-sun"/></svg>
+      <svg class="moon" style="position:absolute;left:5px;width:11px;height:11px;opacity:1"><use href="#ic-moon"/></svg>
+      <svg class="sun" style="position:absolute;right:5px;width:11px;height:11px;opacity:0"><use href="#ic-sun"/></svg>
     </button>
     <div class="section-label">Staff</div>
     <nav>
-      <a href="#" data-page="index" class="active"><svg><use href="#ic-list"/></svg>Packing Lists</a>
-      <a href="#" data-page="staff" onclick="goTo('staff');return false"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
+      <a href="index.html" data-page="index"><svg><use href="#ic-list"/></svg>Packing Lists</a>
+      <a href="staff.html" data-page="staff"><svg><use href="#ic-plus"/></svg>Staff Entry</a>
     </nav>
     <div class="section-label">Supervisor</div>
     <nav>
-      <a href="#" data-page="checker" onclick="goTo('checker');return false"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
-      <a href="#" data-page="transfer" onclick="goTo('transfer');return false"><svg><use href="#ic-transfer"/></svg>Transfer</a>
-      <a href="#" data-page="rejects" class="danger" onclick="goTo('rejects');return false"><svg><use href="#ic-alert"/></svg>Reject List</a>
+      <a href="checker.html" data-page="checker"><svg><use href="#ic-check-sq"/></svg>Checker View</a>
+      <a href="transfer.html" data-page="transfer"><svg><use href="#ic-transfer"/></svg>Transfer</a>
+      <a href="rejects.html" data-page="rejects" class="danger"><svg><use href="#ic-alert"/></svg>Reject List</a>
     </nav>
     <div class="section-label">Tools</div>
     <nav>
-      <a href="#" data-page="missing" onclick="goTo('missing');return false"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
+      <a href="missing.html" data-page="missing"><svg><use href="#ic-missing"/></svg>Missing Cartons</a>
     </nav>
     <div style="flex:1"></div>
   </div>
   <div id="main">
-    <div class="page-header">
-      <div>
-        <div class="page-title"><svg><use href="#ic-list"/></svg>Packing Lists</div>
-        <div class="page-subtitle">Create or select a list, then add carton entries.</div>
-      </div>
-      <button class="btn btn-primary" onclick="showCreateList()">
-        <svg><use href="#ic-plus"/></svg>New List
-      </button>
-    </div>
-    <div id="create-list-form" class="hidden"></div>
-    <div id="lists-count" class="text-xs text-muted" style="margin-bottom:10px"></div>
-    <div class="table-wrap">
-      <table class="table-responsive">
-        <thead><tr><th>Ref</th><th>Customer</th><th>Packed By</th><th>Status</th><th>Created</th><th></th></tr></thead>
-        <tbody id="lists-tbody"><tr><td colspan="6"><div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading packing lists...</p></div></td></tr></tbody>
-      </table>
+    <div id="index-content">
+      <div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading packing lists...</p></div>
     </div>
   </div>
 </div>
 
 <script>
-(function() {
+'use strict';
+
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbw-IL1IPm1C0Q4hi8fBZCov95DFJV4SKOkY3p5C5-x8n7a-iTtISrn7_mN8qc66-ri9qw/exec';
+var ALL_LISTS = [];
+
+(function initTheme() {
+  const saved = localStorage.getItem('mg-theme');
+  const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const theme = saved || (prefersLight ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('mg-theme', next);
+}
+
+function initSidebar(currentPage) {
+  document.querySelectorAll('nav a[data-page]').forEach(a => {
+    if (a.dataset.page === currentPage) a.classList.add('active');
+  });
+}
+
+function escHtml(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function gasGet(params) {
+  if (!GAS_URL) return null;
+  const url = GAS_URL + '?' + new URLSearchParams(params);
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 25000);
+    const r = await fetch(url, { signal: ctrl.signal, redirect: 'follow' });
+    clearTimeout(t);
+    const txt = await r.text();
+    if (!txt || !txt.trim()) return null;
+    if (txt.trim().startsWith('<')) return null;
+    try { return JSON.parse(txt); } catch { return null; }
+  } catch(err) { return null; }
+}
+
+function listStatusBadge(status) {
+  const s = (status || '').toLowerCase();
+  if (s.includes('rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
+  if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
+  if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
+  if (s.includes('open')) return '<span class="badge badge-amber">OPEN</span>';
+  return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
+}
+
+function fmtDate(ts) {
+  if (!ts) return '\u2014';
+  const d = new Date(ts);
+  if (isNaN(d)) return String(ts).slice(0,10);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
+}
+
+function renderLists(tab) {
+  const container = document.getElementById('lists-grid');
+  if (!container) return;
+  
+  const filtered = tab === 'completed' 
+    ? ALL_LISTS.filter(l => (l.status || '').toLowerCase().includes('completed'))
+    : ALL_LISTS.filter(l => !(l.status || '').toLowerCase().includes('completed'));
+  
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No packing lists in this section.</div>';
+    return;
+  }
+  
+  let html = '';
+  for (const list of filtered) {
+    html += `<a href="list.html?ref=${encodeURIComponent(list.listRef)}" class="list-card">
+      <div class="list-card-header">
+        <span class="list-card-ref">${escHtml(list.listRef)}</span>
+        ${listStatusBadge(list.status)}
+      </div>
+      <div class="list-card-meta">
+        <div><strong>Customer:</strong> ${escHtml(list.customer || '')}</div>
+        <div><strong>Created By:</strong> ${escHtml(list.createdBy || '')}</div>
+        <div><strong>Team:</strong> ${escHtml(list.team || '')}</div>
+        <div><strong>Date:</strong> ${fmtDate(list.timestamp)}</div>
+      </div>
+      <div class="list-card-stats">
+        <div class="list-card-stat"><span class="num">${list.cartonCount || 0}</span><span class="lbl">Cartons</span></div>
+        <div class="list-card-stat"><span class="num">${list.partCount || 0}</span><span class="lbl">Parts</span></div>
+      </div>
+    </a>`;
+  }
+  container.innerHTML = html;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
+  renderLists(tab);
+}
+
+(async function() {
   initSidebar('index');
-  let isSubmitting = false;
-  var LISTS = [];
 
-  async function loadLists() {
-    let cached = [];
-    try {
-      const c = localStorage.getItem('mg_lists_cache');
-      if (c) cached = JSON.parse(c);
-    } catch(e){}
-    if (cached.length > 0) {
-      LISTS = cached;
-      renderLists();
-    }
-    let fresh = null;
-    try { fresh = await gasGet({ action: 'packingLists' }); } catch(e){}
-    if (fresh && fresh.lists) {
-      LISTS = fresh.lists;
-      try { localStorage.setItem('mg_lists_cache', JSON.stringify(LISTS)); localStorage.setItem('mg_lists_cache_time', String(Date.now())); } catch(e){}
-      renderLists();
-    } else if (!cached.length) {
-      LISTS = [];
-      renderLists();
-    }
-  }
+  const res = await gasGet({ action: 'packingLists' });
+  ALL_LISTS = (res && res.lists) ? res.lists : [];
 
-  function renderLists() {
-    document.getElementById('lists-count').textContent = LISTS.length + ' list' + (LISTS.length !== 1 ? 's' : '');
-    const tbody = document.getElementById('lists-tbody');
-    if (LISTS.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><svg><use href="#ic-list"/></svg><p>No packing lists yet \u2014 click New List</p></div></td></tr>';
-      return;
-    }
-    tbody.innerHTML = LISTS.map(l => {
-      const statusClass = l.status === 'open' ? 'badge-green' :
-                          l.status === 'completed' ? 'badge-blue' :
-                          l.status === 'has rejected' ? 'badge-red' :
-                          l.status === 'partial' ? 'badge-amber' : 'badge-muted';
-      return `
-      <tr class="clickable" onclick="goToList('${l.listRef}')">
-        <td data-label="Ref" class="font-bold text-primary">${escHtml(l.listRef)}</td>
-        <td data-label="Customer">${escHtml(l.customer)}</td>
-        <td data-label="Packed By"><div class="text-sm">${escHtml(l.createdBy)}</div><div class="text-xs text-muted">${escHtml(l.team)}</div></td>
-        <td data-label="Status"><span class="badge ${statusClass}">${escHtml(l.status)}</span></td>
-        <td data-label="Created" class="text-xs text-muted">${fmtDate(l.createdAt)}</td>
-        <td><svg style="width:14px;height:14px;color:var(--muted-fg)"><use href="#ic-arrow-right"/></svg></td>
-      </tr>`;
-    }).join('');
-  }
+  const completedCount = ALL_LISTS.filter(l => (l.status || '').toLowerCase().includes('completed')).length;
+  const underCount = ALL_LISTS.length - completedCount;
 
-  window.showCreateList = function() {
-    const el = document.getElementById('create-list-form');
-    el.classList.remove('hidden');
-    el.innerHTML = `
-      <div class="form-panel" style="margin-bottom:16px">
-        <div class="form-panel-header primary-bg">
-          <span class="font-bold text-primary text-sm" style="text-transform:uppercase;letter-spacing:.07em">
-            <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px"><use href="#ic-plus"/></svg>Create New Packing List
-          </span>
-          <button class="btn-icon" onclick="document.getElementById('create-list-form').classList.add('hidden');document.getElementById('create-list-form').innerHTML=''"><svg style="width:12px;height:12px"><use href="#ic-x"/></svg></button>
-        </div>
-        <div class="form-panel-body">
-          <div class="grid-3" style="margin-bottom:14px">
-            <div class="form-group">
-              <label class="form-label">Customer Name <span class="req">*</span></label>
-              <input type="text" id="cl-customer" placeholder="Enter customer..." autofocus />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Packed By <span class="req">*</span></label>
-              <input type="text" id="cl-by" placeholder="Staff name or ID..." />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Team <span class="req">*</span></label>
-              <input type="text" id="cl-team" placeholder="Team A / Team B..." />
-            </div>
-          </div>
-          <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--border)">
-            <button class="btn btn-outline" onclick="document.getElementById('create-list-form').classList.add('hidden');document.getElementById('create-list-form').innerHTML=''">Cancel</button>
-            <button class="btn btn-primary" id="btn-create-list" onclick="submitCreateList()">
-              <svg><use href="#ic-arrow-right"/></svg>Create & Open
-            </button>
-          </div>
-        </div>
-      </div>`;
-  };
+  let html = `
+  <div class="page-header">
+    <div>
+      <div class="page-title">Packing Lists</div>
+      <div class="page-subtitle">${ALL_LISTS.length} total list${ALL_LISTS.length!==1?'s':''}</div>
+    </div>
+  </div>
 
-  window.submitCreateList = async function() {
-    if (isSubmitting) return;
-    isSubmitting = true;
-    setButtonLoading('btn-create-list', true);
-    const customer = document.getElementById('cl-customer').value.trim();
-    const createdBy = document.getElementById('cl-by').value.trim();
-    const team = document.getElementById('cl-team').value.trim();
-    if (!customer || !createdBy || !team) {
-      toast('Please fill all fields', 'error');
-      isSubmitting = false; setButtonLoading('btn-create-list', false); return;
-    }
-    const res = await gasCreatePackingList({ id: Date.now(), customer, createdBy, team });
-    if (!res || !res.success) {
-      toast('Failed to create packing list.', 'error');
-      isSubmitting = false; setButtonLoading('btn-create-list', false); return;
-    }
-    toast('Packing list ' + res.listRef + ' created!', 'success');
-    isSubmitting = false;
-    goToList(res.listRef);
-  };
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="under" onclick="switchTab('under')">Under Packing (${underCount})</button>
+    <button class="tab-btn" data-tab="completed" onclick="switchTab('completed')">Completed (${completedCount})</button>
+  </div>
 
-  async function gasGetPackingLists() {
-    const res = await gasGet({ action: 'packingLists' });
-    return (res && res.lists) ? res.lists : [];
-  }
-  async function gasCreatePackingList(data) {
-    return await gasPost({ action: 'createPackingList', ...data });
-  }
+  <div id="lists-grid" class="list-grid">
+    <!-- Populated by JS -->
+  </div>`;
 
-  loadLists();
+  document.getElementById('index-content').innerHTML = html;
+  renderLists('under');
 })();
 </script>
 </body>
