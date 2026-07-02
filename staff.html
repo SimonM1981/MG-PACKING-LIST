@@ -574,7 +574,6 @@ function initSidebar(currentPage) {
     }
     if (!lists) lists = [];
     
-    // FIX: Show all lists that are NOT completed (open, has rejected, partial)
     const availableLists = lists.filter(l => l.status !== 'completed');
     staffSelectedList = availableLists.length > 0 ? availableLists[0] : null;
 
@@ -667,6 +666,15 @@ function initSidebar(currentPage) {
           formState.parts = [];
           addPart();
         }
+        
+        // FIX: For non-kit items, photos are stripped from parts JSON during save.
+        // Restore them from the top-level imgBagUrl/imgInnerUrl/imgCartonUrl fields.
+        if (formState.cartonType !== 'kit' && formState.parts.length > 0) {
+          if (carton.imgBagUrl) formState.parts[0].photos.bag = carton.imgBagUrl;
+          if (carton.imgInnerUrl) formState.parts[0].photos.inner = carton.imgInnerUrl;
+          if (carton.imgCartonUrl) formState.parts[0].photos.outer = carton.imgCartonUrl;
+        }
+        
         try { toast('Carton loaded \u2014 review and resubmit', 'success'); } catch(e) {}
       } else {
         try { toast('Could not load carton data \u2014 starting fresh', 'error'); } catch(e) {}
@@ -901,26 +909,32 @@ function initSidebar(currentPage) {
       </div>
     </div>`;
   }
+  
+  // FIX: Use getThumbUrl for reliable image loading
   function renderPartPhoto(idx, which, label) {
     const hasPhoto = formState.parts[idx]?.photos?.[which];
+    const thumbUrl = getThumbUrl(hasPhoto, 400);
     return `<div class="form-group" id="photo-group-${idx}-${which}">
       <label class="form-label">${label}</label>
       <input type="file" id="photo-input-${idx}-${which}" accept="image/*" capture="environment" style="display:none" onchange="handlePartPhoto(${idx},'${which}',this)" />
       <button type="button" class="photo-btn ${hasPhoto?'has-photo':''}" id="photo-btn-${idx}-${which}" onclick="document.getElementById('photo-input-${idx}-${which}').click()">
         <svg><use href="#ic-camera"/></svg><div><div class="text-sm font-bold">${label}</div><div class="text-xs text-muted mt-4">${hasPhoto?'Photo captured':'Tap to capture'}</div></div>
       </button>
-      <div id="photo-thumb-${idx}-${which}">${hasPhoto?`<img class="photo-thumb" src="${hasPhoto}" onclick="openLightbox('${hasPhoto}')" />`:''}</div>
+      <div id="photo-thumb-${idx}-${which}">${hasPhoto?`<img class="photo-thumb" src="${thumbUrl}" onclick="openLightbox('${escHtml(hasPhoto)}')" />`:''}</div>
     </div>`;
   }
+  
+  // FIX: Use getThumbUrl for reliable image loading
   function renderKitPhoto(which, label) {
     const hasPhoto = formState.cartonPhotos[which];
+    const thumbUrl = getThumbUrl(hasPhoto, 400);
     return `<div class="form-group">
       <label class="form-label">${label}</label>
       <input type="file" id="kit-photo-input-${which}" accept="image/*" capture="environment" style="display:none" onchange="handleKitPhoto('${which}',this)" />
       <label for="kit-photo-input-${which}" class="photo-btn ${hasPhoto?'has-photo':''}" id="kit-photo-btn-${which}">
         <svg><use href="#ic-camera"/></svg><div><div class="text-sm font-bold">${label}</div><div class="text-xs text-muted mt-4">${hasPhoto?'Photo captured':'Tap to capture'}</div></div>
       </label>
-      <div id="kit-photo-thumb-${which}">${hasPhoto?`<img class="photo-thumb" src="${hasPhoto}" onclick="openLightbox('${hasPhoto}')" />`:''}</div>
+      <div id="kit-photo-thumb-${which}">${hasPhoto?`<img class="photo-thumb" src="${thumbUrl}" onclick="openLightbox('${escHtml(hasPhoto)}')" />`:''}</div>
     </div>`;
   }
 
@@ -931,8 +945,37 @@ function initSidebar(currentPage) {
   window.onPartBarcode = function(idx, which) { const el = document.getElementById('f-' + which + '-' + idx); if (!el) return; const val = el.value.trim().toUpperCase(); formState.parts[idx][which] = val; el.value = val; if (!val) { formState.parts[idx][which + 'Match'] = null; setBadge(idx, which, null); updateSubmit(); return; } if (val === 'NO') { formState.parts[idx][which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce[idx + '-' + which]); setBadge(idx, which, 'checking'); lookupDebounce[idx + '-' + which] = setTimeout(() => doLookup(idx, which, val), 450); };
   window.onKitBarcode = function(which) { const el = document.getElementById('f-kit-' + which); if (!el) return; const val = el.value.trim().toUpperCase(); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] = val; el.value = val; if (!val) { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = null; setKitBadge(which, null); updateSubmit(); return; } if (val === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce['kit-' + which]); setKitBadge(which, 'checking'); lookupDebounce['kit-' + which] = setTimeout(() => doKitLookup(which, val), 450); };
   window.syncKit = function() { if (formState.cartonType !== 'kit') return; const pi = formState.cartonPi; formState.parts.forEach(p => { p.pi = pi; }); triggerLookup(0); };
-  window.handlePartPhoto = async function(idx, which, input) { const file = input.files[0]; if (!file) return; const dataUri = await compressImage(file); if (!formState.parts[idx].photos) formState.parts[idx].photos = { bag: null, inner: null, outer: null }; formState.parts[idx].photos[which] = dataUri; const btn = document.getElementById('photo-btn-' + idx + '-' + which); const thumb = document.getElementById('photo-thumb-' + idx + '-' + which); if (btn) btn.classList.add('has-photo'); if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + dataUri + '" onclick="openLightbox(\'' + dataUri + '\')" />'; input.value = ''; };
-  window.handleKitPhoto = async function(which, input) { try { const file = input.files[0]; if (!file) return; const dataUri = await compressImage(file); formState.cartonPhotos[which] = dataUri; const btn = document.getElementById('kit-photo-btn-' + which); const thumb = document.getElementById('kit-photo-thumb-' + which); if (btn) btn.classList.add('has-photo'); if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + dataUri + '" onclick="openLightbox(\'' + dataUri + '\')" />'; input.value = ''; } catch(err) { toast('Photo failed: ' + err.message, 'error'); } };
+  
+  // FIX: Use getThumbUrl when updating DOM after photo capture
+  window.handlePartPhoto = async function(idx, which, input) { 
+    const file = input.files[0]; 
+    if (!file) return; 
+    const dataUri = await compressImage(file); 
+    if (!formState.parts[idx].photos) formState.parts[idx].photos = { bag: null, inner: null, outer: null }; 
+    formState.parts[idx].photos[which] = dataUri; 
+    const btn = document.getElementById('photo-btn-' + idx + '-' + which); 
+    const thumb = document.getElementById('photo-thumb-' + idx + '-' + which); 
+    if (btn) btn.classList.add('has-photo'); 
+    if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox(\'' + escHtml(dataUri) + '\')" />'; 
+    input.value = ''; 
+  };
+  
+  // FIX: Use getThumbUrl when updating DOM after photo capture
+  window.handleKitPhoto = async function(which, input) { 
+    try { 
+      const file = input.files[0]; 
+      if (!file) return; 
+      const dataUri = await compressImage(file); 
+      formState.cartonPhotos[which] = dataUri; 
+      const btn = document.getElementById('kit-photo-btn-' + which); 
+      const thumb = document.getElementById('kit-photo-thumb-' + which); 
+      if (btn) btn.classList.add('has-photo'); 
+      if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox(\'' + escHtml(dataUri) + '\')" />'; 
+      input.value = ''; 
+    } catch(err) { 
+      toast('Photo failed: ' + err.message, 'error'); 
+    } 
+  };
 
   function triggerLookup(idx) { ['bag', 'inner', 'outer'].forEach(w => { const bc = formState.parts[idx][w]; if (bc && bc !== 'NO') { clearTimeout(lookupDebounce[idx + '-' + w]); setBadge(idx, w, 'checking'); lookupDebounce[idx + '-' + w] = setTimeout(() => doLookup(idx, w, bc), 400); } }); }
 
