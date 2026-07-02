@@ -86,7 +86,7 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .15s;cursor:pointer;touch-action:manipulation;min-height:36px;background:var(--primary);color:#fff}
 .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
 .btn-green{background:var(--green);color:#fff}
-.btn-danger{background:var(--danger);color:#fff}
+.btn-disabled{background:var(--muted);color:var(--muted-fg);cursor:not-allowed;opacity:0.6}
 .text-primary{color:var(--primary)}.text-danger{color:var(--danger)}.text-amber{color:var(--amber)}.text-green{color:var(--green)}.text-muted{color:var(--muted-fg)}
 .text-sm{font-size:12px}.text-xs{font-size:11px}.font-bold{font-weight:700}
 .mt-4{margin-top:4px}.mt-8{margin-top:8px}.mb-16{margin-bottom:16px}
@@ -232,7 +232,7 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbzVzcGU8RO0kFXsYtkq8b9tufFeA4mpEPts99B8pAHRo9powvxe7Hg4VYwGfvZZXFOoqA/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbytodVpWD4hc0W1mpQPzIe9pgK4OlPA_UVgC9mh1BYRtxUkEhhuninMLflFRwFvP4xZ7g/exec';
 var ALL_CARTONS = [];
 var CURRENT_LIST = null;
 var CURRENT_LIST_REF = '';
@@ -318,6 +318,7 @@ function listStatusBadge(status) {
   if (s.includes('rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
   if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
   if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
+  if (s.includes('verified')) return '<span class="badge badge-green">VERIFIED</span>';
   if (s.includes('open')) return '<span class="badge badge-amber">OPEN</span>';
   return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
 }
@@ -347,11 +348,9 @@ function showToast(msg, type) {
 // Collect ALL photo URLs from carton object
 function collectPhotos(carton) {
   var photos = [];
-  // Direct array fields
   if (carton.photos && Array.isArray(carton.photos)) photos = photos.concat(carton.photos);
   if (carton.photoUrls && Array.isArray(carton.photoUrls)) photos = photos.concat(carton.photoUrls);
   
-  // Specific field names from your Google Sheet
   var photoFields = [
     'imgBagUrl','imgInnerUrl','imgCartonUrl','imgOuterUrl',
     'bagPhoto','innerPhoto','outerPhoto','partPhoto',
@@ -365,12 +364,10 @@ function collectPhotos(carton) {
     if (val && String(val).trim().length > 0) photos.push(String(val).trim());
   }
   
-  // Also scan ALL keys for anything that looks like a URL containing drive.google or http
   for (var key in carton) {
     if (carton.hasOwnProperty(key)) {
       var v = carton[key];
       if (v && typeof v === 'string' && v.length > 10 && (v.indexOf('http') === 0 || v.indexOf('drive.google') !== -1 || v.indexOf('googleusercontent') !== -1)) {
-        // Avoid duplicates
         if (photos.indexOf(v) === -1) photos.push(v);
       }
     }
@@ -399,7 +396,6 @@ function openModal(idx) {
     partsHtml = '<div class="value" style="font-family:var(--font-mono);font-size:16px">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
   }
   
-  // Collect photos using the robust function
   var allPhotos = collectPhotos(carton);
   
   var photosHtml = '';
@@ -415,7 +411,6 @@ function openModal(idx) {
     photosHtml = '<div style="padding:16px;text-align:center;color:var(--muted-fg);font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)">No photos available</div>';
   }
   
-  // Barcode checker style
   var bagIcon = carton.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
   var innerIcon = carton.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
   var outerIcon = carton.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
@@ -489,6 +484,11 @@ function closeModalOnOverlay(e) {
 
 // Password Modal
 function openPasswordModal() {
+  var isCompleted = CURRENT_LIST && (CURRENT_LIST.status || '').toLowerCase().includes('completed');
+  if (isCompleted) {
+    showToast('This packing list is already completed', 'error');
+    return;
+  }
   document.getElementById('completePassword').value = '';
   document.getElementById('passwordError').style.display = 'none';
   document.getElementById('pwListRef').textContent = CURRENT_LIST_REF;
@@ -580,7 +580,7 @@ document.addEventListener('keydown', function(e) {
     '</div>' +
     '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
       listStatusBadge(list.status) +
-      (!isCompleted ? '<button class="btn btn-green" onclick="openPasswordModal()"><svg width="14" height="14"><use href="#ic-check"/></svg> Complete List</button>' : '') +
+      '<button class="btn ' + (isCompleted ? 'btn-disabled' : 'btn-green') + '" onclick="openPasswordModal()" ' + (isCompleted ? 'disabled' : '') + '><svg width="14" height="14"><use href="#ic-check"/></svg> ' + (isCompleted ? 'List Completed \u2713' : 'Complete List') + '</button>' +
     '</div>' +
   '</div>' +
 
