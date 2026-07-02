@@ -60,7 +60,7 @@ nav a.danger{color:var(--danger)}
 .theme-toggle .moon{left:5px;opacity:1}[data-theme="light"] .theme-toggle .moon{opacity:0}
 .theme-toggle .sun{right:5px;opacity:0}[data-theme="light"] .theme-toggle .sun{opacity:1}
 .page-header{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap;background:transparent}
-.page-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px;font-family:var(--font-mono)}
+.page-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-mono)}
 .page-subtitle{font-size:12px;color:var(--muted-fg);margin-top:4px}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:22px}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm)}
@@ -344,6 +344,41 @@ function showToast(msg, type) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// Collect ALL photo URLs from carton object
+function collectPhotos(carton) {
+  var photos = [];
+  // Direct array fields
+  if (carton.photos && Array.isArray(carton.photos)) photos = photos.concat(carton.photos);
+  if (carton.photoUrls && Array.isArray(carton.photoUrls)) photos = photos.concat(carton.photoUrls);
+  
+  // Specific field names from your Google Sheet
+  var photoFields = [
+    'imgBagUrl','imgInnerUrl','imgCartonUrl','imgOuterUrl',
+    'bagPhoto','innerPhoto','outerPhoto','partPhoto',
+    'photo1','photo2','photo3','photo4','photo5',
+    'imgBag','imgInner','imgCarton','imgOuter',
+    'bagUrl','innerUrl','outerUrl','cartonUrl',
+    'photoUrl','imageUrl','image1','image2','image3'
+  ];
+  for (var i = 0; i < photoFields.length; i++) {
+    var val = carton[photoFields[i]];
+    if (val && String(val).trim().length > 0) photos.push(String(val).trim());
+  }
+  
+  // Also scan ALL keys for anything that looks like a URL containing drive.google or http
+  for (var key in carton) {
+    if (carton.hasOwnProperty(key)) {
+      var v = carton[key];
+      if (v && typeof v === 'string' && v.length > 10 && (v.indexOf('http') === 0 || v.indexOf('drive.google') !== -1 || v.indexOf('googleusercontent') !== -1)) {
+        // Avoid duplicates
+        if (photos.indexOf(v) === -1) photos.push(v);
+      }
+    }
+  }
+  
+  return photos.filter(function(u) { return u && u.length > 0; });
+}
+
 // Modal Functions
 function openModal(idx) {
   const carton = ALL_CARTONS[idx];
@@ -352,10 +387,11 @@ function openModal(idx) {
   
   const parts = carton.parts && carton.parts.length ? carton.parts : [{partNo: carton.partNo, qty: carton.qty || carton.cartonQty}];
   
-  let partsHtml = '';
+  var partsHtml = '';
   if (parts.length > 1) {
     partsHtml = '<div class="parts-list">';
-    for (const p of parts) {
+    for (var pi = 0; pi < parts.length; pi++) {
+      var p = parts[pi];
       partsHtml += '<div class="part-row"><span class="part-no">' + escHtml(p.partNo || '') + '</span><span class="part-qty">Qty: ' + escHtml(p.qty || '1') + '</span></div>';
     }
     partsHtml += '</div>';
@@ -363,26 +399,15 @@ function openModal(idx) {
     partsHtml = '<div class="value" style="font-family:var(--font-mono);font-size:16px">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
   }
   
-  // Collect all possible photo fields
-  let allPhotos = [];
-  if (carton.photos && Array.isArray(carton.photos)) allPhotos = allPhotos.concat(carton.photos);
-  if (carton.photoUrls && Array.isArray(carton.photoUrls)) allPhotos = allPhotos.concat(carton.photoUrls);
-  if (carton.photo1) allPhotos.push(carton.photo1);
-  if (carton.photo2) allPhotos.push(carton.photo2);
-  if (carton.photo3) allPhotos.push(carton.photo3);
-  if (carton.photo4) allPhotos.push(carton.photo4);
-  if (carton.photo5) allPhotos.push(carton.photo5);
-  if (carton.bagPhoto) allPhotos.push(carton.bagPhoto);
-  if (carton.innerPhoto) allPhotos.push(carton.innerPhoto);
-  if (carton.outerPhoto) allPhotos.push(carton.outerPhoto);
-  if (carton.partPhoto) allPhotos.push(carton.partPhoto);
-  allPhotos = allPhotos.filter(u => u && String(u).trim().length > 0);
+  // Collect photos using the robust function
+  var allPhotos = collectPhotos(carton);
   
-  let photosHtml = '';
+  var photosHtml = '';
   if (allPhotos.length > 0) {
     photosHtml = '<div class="photo-grid">';
-    for (const url of allPhotos) {
-      const thumb = getThumbUrl(url, 400);
+    for (var pi = 0; pi < allPhotos.length; pi++) {
+      var url = allPhotos[pi];
+      var thumb = getThumbUrl(url, 400);
       photosHtml += '<img src="' + escHtml(thumb) + '" onerror="this.style.display=\'none\'" onclick="window.open(\'' + escHtml(url) + '\',\'_blank\')" alt="Photo">';
     }
     photosHtml += '</div>';
@@ -391,63 +416,62 @@ function openModal(idx) {
   }
   
   // Barcode checker style
-  const bagIcon = carton.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
-  const innerIcon = carton.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
-  const outerIcon = carton.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  var bagIcon = carton.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  var innerIcon = carton.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  var outerIcon = carton.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
   
-  const bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
-  const innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
-  const outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  var bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  var innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  var outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
   
-  const html = `
-    <div class="checker-card">
-      <div class="checker-card-header">
-        <div class="checker-card-id">${escHtml(carton.cartonId || '')}</div>
-        <div>${statusBadge(carton.status)}</div>
-      </div>
-    </div>
+  var html = 
+    '<div class="checker-card">' +
+      '<div class="checker-card-header">' +
+        '<div class="checker-card-id">' + escHtml(carton.cartonId || '') + '</div>' +
+        '<div>' + statusBadge(carton.status) + '</div>' +
+      '</div>' +
+    '</div>' +
 
-    <div class="checker-section">
-      <div class="checker-section-title">Part Information</div>
-      <div class="checker-row"><span class="label">Part Number${parts.length > 1 ? 's' : ''}</span><span class="value">${parts.length === 1 ? escHtml(parts[0].partNo || carton.partNo || '') : parts.length + ' items'}</span></div>
-      ${parts.length > 1 ? '<div style="margin-top:8px">' + partsHtml + '</div>' : ''}
-      <div class="checker-row"><span class="label">Total Qty</span><span class="value">${escHtml(carton.qty || carton.cartonQty || '1')}</span></div>
-      <div class="checker-row"><span class="label">P/I No.</span><span class="value">${escHtml(carton.pi || carton.cartonPI || '\u2014')}</span></div>
-    </div>
+    '<div class="checker-section">' +
+      '<div class="checker-section-title">Part Information</div>' +
+      '<div class="checker-row"><span class="label">Part Number' + (parts.length > 1 ? 's' : '') + '</span><span class="value">' + (parts.length === 1 ? escHtml(parts[0].partNo || carton.partNo || '') : parts.length + ' items') + '</span></div>' +
+      (parts.length > 1 ? '<div style="margin-top:8px">' + partsHtml + '</div>' : '') +
+      '<div class="checker-row"><span class="label">Total Qty</span><span class="value">' + escHtml(carton.qty || carton.cartonQty || '1') + '</span></div>' +
+      '<div class="checker-row"><span class="label">P/I No.</span><span class="value">' + escHtml(carton.pi || carton.cartonPI || '\u2014') + '</span></div>' +
+    '</div>' +
 
-    <div class="checker-section">
-      <div class="checker-section-title">Barcode Verification</div>
-      <div class="barcode-checker">
-        ${bagIcon}
-        <div class="bc-info"><div class="bc-label">Bag Barcode</div><div class="bc-value">${escHtml(carton.bag || '\u2014')}</div></div>
-        <div class="bc-status">${bagStatus}</div>
-      </div>
-      <div class="barcode-checker">
-        ${innerIcon}
-        <div class="bc-info"><div class="bc-label">Inner Barcode</div><div class="bc-value">${escHtml(carton.inner || '\u2014')}</div></div>
-        <div class="bc-status">${innerStatus}</div>
-      </div>
-      <div class="barcode-checker">
-        ${outerIcon}
-        <div class="bc-info"><div class="bc-label">Outer Barcode</div><div class="bc-value">${escHtml(carton.outer || '\u2014')}</div></div>
-        <div class="bc-status">${outerStatus}</div>
-      </div>
-    </div>
+    '<div class="checker-section">' +
+      '<div class="checker-section-title">Barcode Verification</div>' +
+      '<div class="barcode-checker">' +
+        bagIcon +
+        '<div class="bc-info"><div class="bc-label">Bag Barcode</div><div class="bc-value">' + escHtml(carton.bag || '\u2014') + '</div></div>' +
+        '<div class="bc-status">' + bagStatus + '</div>' +
+      '</div>' +
+      '<div class="barcode-checker">' +
+        innerIcon +
+        '<div class="bc-info"><div class="bc-label">Inner Barcode</div><div class="bc-value">' + escHtml(carton.inner || '\u2014') + '</div></div>' +
+        '<div class="bc-status">' + innerStatus + '</div>' +
+      '</div>' +
+      '<div class="barcode-checker">' +
+        outerIcon +
+        '<div class="bc-info"><div class="bc-label">Outer Barcode</div><div class="bc-value">' + escHtml(carton.outer || '\u2014') + '</div></div>' +
+        '<div class="bc-status">' + outerStatus + '</div>' +
+      '</div>' +
+    '</div>' +
 
-    <div class="checker-section">
-      <div class="checker-section-title">Photos</div>
-      ${photosHtml}
-    </div>
+    '<div class="checker-section">' +
+      '<div class="checker-section-title">Photos (' + allPhotos.length + ')</div>' +
+      photosHtml +
+    '</div>' +
 
-    <div class="checker-section">
-      <div class="checker-section-title">Metadata</div>
-      <div class="checker-row"><span class="label">Packed By</span><span class="value">${escHtml(carton.packedBy || carton.createdBy || '\u2014')}</span></div>
-      <div class="checker-row"><span class="label">Team</span><span class="value">${escHtml(carton.team || '\u2014')}</span></div>
-      <div class="checker-row"><span class="label">Checker</span><span class="value">${escHtml(carton.checker || carton.checkedBy || '\u2014')}</span></div>
-      <div class="checker-row"><span class="label">Date</span><span class="value">${fmtDate(carton.timestamp)}</span></div>
-      ${carton.remarks ? '<div class="checker-row" style="flex-direction:column;align-items:flex-start;gap:4px"><span class="label">Remarks</span><span class="value" style="font-weight:400;color:var(--text-secondary)">' + escHtml(carton.remarks) + '</span></div>' : ''}
-    </div>
-  `;
+    '<div class="checker-section">' +
+      '<div class="checker-section-title">Metadata</div>' +
+      '<div class="checker-row"><span class="label">Packed By</span><span class="value">' + escHtml(carton.packedBy || carton.createdBy || '\u2014') + '</span></div>' +
+      '<div class="checker-row"><span class="label">Team</span><span class="value">' + escHtml(carton.team || '\u2014') + '</span></div>' +
+      '<div class="checker-row"><span class="label">Checker</span><span class="value">' + escHtml(carton.checker || carton.checkedBy || '\u2014') + '</span></div>' +
+      '<div class="checker-row"><span class="label">Date</span><span class="value">' + fmtDate(carton.timestamp) + '</span></div>' +
+      (carton.remarks ? '<div class="checker-row" style="flex-direction:column;align-items:flex-start;gap:4px"><span class="label">Remarks</span><span class="value" style="font-weight:400;color:var(--text-secondary)">' + escHtml(carton.remarks) + '</span></div>' : '') +
+    '</div>';
   
   document.getElementById('modalBody').innerHTML = html;
   document.getElementById('cartonModal').classList.add('active');
@@ -470,7 +494,7 @@ function openPasswordModal() {
   document.getElementById('pwListRef').textContent = CURRENT_LIST_REF;
   document.getElementById('passwordModal').classList.add('active');
   document.body.style.overflow = 'hidden';
-  setTimeout(() => document.getElementById('completePassword').focus(), 100);
+  setTimeout(function() { document.getElementById('completePassword').focus(); }, 100);
 }
 
 function closePasswordModal() {
@@ -483,18 +507,18 @@ function closePasswordModalOnOverlay(e) {
 }
 
 async function confirmComplete() {
-  const pw = document.getElementById('completePassword').value.trim();
+  var pw = document.getElementById('completePassword').value.trim();
   if (pw !== 'simon1981') {
     document.getElementById('passwordError').style.display = 'block';
     return;
   }
   document.getElementById('passwordError').style.display = 'none';
   
-  const res = await gasPost({ action: 'completeList', listRef: CURRENT_LIST_REF, password: pw });
+  var res = await gasPost({ action: 'completeList', listRef: CURRENT_LIST_REF, password: pw });
   if (res && res.success) {
     showToast('Packing list marked as COMPLETED', 'success');
     closePasswordModal();
-    setTimeout(() => location.reload(), 800);
+    setTimeout(function() { location.reload(); }, 800);
   } else {
     showToast(res && res.error ? res.error : 'Failed to complete list', 'error');
   }
@@ -513,8 +537,8 @@ document.addEventListener('keydown', function(e) {
 (async function() {
   initSidebar('index');
 
-  const params = new URLSearchParams(location.search);
-  const listRef = params.get('ref') || '';
+  var params = new URLSearchParams(location.search);
+  var listRef = params.get('ref') || '';
   CURRENT_LIST_REF = listRef;
 
   if (!listRef) {
@@ -522,14 +546,14 @@ document.addEventListener('keydown', function(e) {
     return;
   }
 
-  const [listsRes, cartonsRes] = await Promise.all([
+  var [listsRes, cartonsRes] = await Promise.all([
     gasGet({ action: 'packingLists' }),
     gasGet({ action: 'cartons', listRef: listRef })
   ]);
 
-  const lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
-  const list = lists.find(l => l.listRef === listRef);
-  const cartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
+  var lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
+  var list = lists.find(function(l) { return l.listRef === listRef; });
+  var cartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
   ALL_CARTONS = cartons;
   CURRENT_LIST = list;
 
@@ -538,88 +562,88 @@ document.addEventListener('keydown', function(e) {
     return;
   }
 
-  const totalParts = cartons.reduce((sum, c) => {
+  var totalParts = cartons.reduce(function(sum, c) {
     if (c.parts && c.parts.length) return sum + c.parts.length;
     return sum + 1;
   }, 0);
 
-  const isCompleted = (list.status || '').toLowerCase().includes('completed');
+  var isCompleted = (list.status || '').toLowerCase().includes('completed');
 
-  let html = `
-  <div class="page-header" style="align-items:center">
-    <div style="display:flex;align-items:center;gap:12px">
-      <a href="index.html" class="back-btn"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></a>
-      <div>
-        <div class="page-title">${escHtml(listRef)}</div>
-        <div class="page-subtitle">${escHtml(list.customer)} \u2014 ${cartons.length} carton${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      ${listStatusBadge(list.status)}
-      ${!isCompleted ? '<button class="btn btn-green" onclick="openPasswordModal()"><svg width="14" height="14"><use href="#ic-check"/></svg> Complete List</button>' : ''}
-    </div>
-  </div>
+  var html = 
+  '<div class="page-header" style="align-items:center">' +
+    '<div style="display:flex;align-items:center;gap:12px">' +
+      '<a href="index.html" class="back-btn"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></a>' +
+      '<div>' +
+        '<div class="page-title">' + escHtml(listRef) + '</div>' +
+        '<div class="page-subtitle">' + escHtml(list.customer) + ' \u2014 ' + cartons.length + ' carton' + (cartons.length!==1?'s':'') + ' \u2014 ' + totalParts + ' part' + (totalParts!==1?'s':'') + ' total</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+      listStatusBadge(list.status) +
+      (!isCompleted ? '<button class="btn btn-green" onclick="openPasswordModal()"><svg width="14" height="14"><use href="#ic-check"/></svg> Complete List</button>' : '') +
+    '</div>' +
+  '</div>' +
 
-  <div class="stat-grid" style="margin-bottom:22px">
-    <div class="stat-card">
-      <div class="label">Customer</div>
-      <div class="value text-primary">${escHtml(list.customer)}</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Packed By</div>
-      <div class="value">${escHtml(list.createdBy || '')}</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Team</div>
-      <div class="value">${escHtml(list.team || '')}</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Total Cartons</div>
-      <div class="value">${cartons.length}</div>
-    </div>
-    <div class="stat-card">
-      <div class="label">Total Parts</div>
-      <div class="value">${totalParts}</div>
-    </div>
-  </div>`;
+  '<div class="stat-grid" style="margin-bottom:22px">' +
+    '<div class="stat-card">' +
+      '<div class="label">Customer</div>' +
+      '<div class="value text-primary">' + escHtml(list.customer) + '</div>' +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="label">Packed By</div>' +
+      '<div class="value">' + escHtml(list.createdBy || '') + '</div>' +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="label">Team</div>' +
+      '<div class="value">' + escHtml(list.team || '') + '</div>' +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="label">Total Cartons</div>' +
+      '<div class="value">' + cartons.length + '</div>' +
+    '</div>' +
+    '<div class="stat-card">' +
+      '<div class="label">Total Parts</div>' +
+      '<div class="value">' + totalParts + '</div>' +
+    '</div>' +
+  '</div>';
 
   if (cartons.length === 0) {
-    html += `<div class="empty-state">No cartons in this packing list yet.</div>`;
+    html += '<div class="empty-state">No cartons in this packing list yet.</div>';
   } else {
-    html += `<div class="table-wrap"><table>
-      <thead>
-        <tr>
-          <th>Carton ID</th>
-          <th>P/I No.</th>
-          <th>Part No.</th>
-          <th>Qty</th>
-          <th>Barcodes</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>`;
+    html += '<div class="table-wrap"><table>' +
+      '<thead>' +
+        '<tr>' +
+          '<th>Carton ID</th>' +
+          '<th>P/I No.</th>' +
+          '<th>Part No.</th>' +
+          '<th>Qty</th>' +
+          '<th>Barcodes</th>' +
+          '<th>Status</th>' +
+          '<th>Date</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>';
     
-    for (let i = 0; i < cartons.length; i++) {
-      const c = cartons[i];
-      const partNoDisplay = c.parts && c.parts.length > 1 
+    for (var i = 0; i < cartons.length; i++) {
+      var c = cartons[i];
+      var partNoDisplay = c.parts && c.parts.length > 1 
         ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
         : escHtml(c.partNo || '');
       
-      const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
+      var rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
       
-      html += `<tr class="${rowClass}" onclick="openModal(${i})" style="cursor:pointer">
-        <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
-        <td>${escHtml(c.pi || c.cartonPI || '')}</td>
-        <td>${partNoDisplay}</td>
-        <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
-        <td>${barcodeDots(c)}</td>
-        <td>${statusBadge(c.status)}</td>
-        <td class="text-muted">${fmtDate(c.timestamp)}</td>
-      </tr>`;
+      html += '<tr class="' + rowClass + '" onclick="openModal(' + i + ')" style="cursor:pointer">' +
+        '<td><strong class="text-primary">' + escHtml(c.cartonId) + '</strong></td>' +
+        '<td>' + escHtml(c.pi || c.cartonPI || '') + '</td>' +
+        '<td>' + partNoDisplay + '</td>' +
+        '<td>' + escHtml(c.qty || c.cartonQty || '1') + '</td>' +
+        '<td>' + barcodeDots(c) + '</td>' +
+        '<td>' + statusBadge(c.status) + '</td>' +
+        '<td class="text-muted">' + fmtDate(c.timestamp) + '</td>' +
+      '</tr>';
     }
     
-    html += `</tbody></table></div>`;
+    html += '</tbody></table></div>';
   }
 
   document.getElementById('list-content').innerHTML = html;
