@@ -19,10 +19,11 @@
 [data-theme="light"] {
   --bg:#f1f3f7;--bg-elevated:#ffffff;--card:#ffffff;--border:#d8dbe3;--muted:#eef0f4;
   --text:#1a1d29;--text-secondary:#4a4f5e;--muted-fg:#6b7280;--primary:#3b5bdb;--primary-dim:rgba(59,91,219,.1);
-  --primary-border:rgba(59,91,219,.25);--danger:#dc2626;--danger-dim:rgba(220,38,38,.25);
-  --amber:#d97706;--amber-dim:rgba(217,119,6,.08);--amber-border:rgba(217,119,6,.25);
-  --blue:#3b5bdb;--blue-dim:rgba(59,91,219,.08);--green:#16a34a;--green-dim:rgba(22,163,74,.08);
-  --green-border:rgba(22,163,74,.25);--input-bg:#ffffff;--overlay:rgba(0,0,0,.65);--scan-bg:#1a1d29;
+  --primary-border:rgba(59,91,219,.25);--danger:#dc2626;--danger-dim:rgba(220,38,38,.08);
+  --danger-border:rgba(220,38,38,.25);--amber:#d97706;--amber-dim:rgba(217,119,6,.08);
+  --amber-border:rgba(217,119,6,.25);--blue:#3b5bdb;--blue-dim:rgba(59,91,219,.08);
+  --green:#16a34a;--green-dim:rgba(22,163,74,.08);--green-border:rgba(22,163,74,.25);
+  --input-bg:#ffffff;--overlay:rgba(0,0,0,.65);--scan-bg:#1a1d29;
   --shadow-sm:0 2px 8px rgba(0,0,0,.08);--shadow:0 8px 32px rgba(0,0,0,.12);
   --toast-bg:#ffffff;--hover-overlay:rgba(0,0,0,.02);
 }
@@ -86,7 +87,7 @@ tr.verified td{border-left:3px solid var(--green)}
 .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
 .text-primary{color:var(--primary)}.text-danger{color:var(--danger)}.text-amber{color:var(--amber)}.text-green{color:var(--green)}.text-muted{color:var(--muted-fg)}
 .text-sm{font-size:12px}.text-xs{font-size:11px}.font-bold{font-weight:700}
-.mt-4{margin-top:4px}
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}
 .hidden{display:none!important}
 .back-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
 .back-btn:hover{border-color:var(--primary);color:var(--primary)}
@@ -101,20 +102,23 @@ tr.verified td{border-left:3px solid var(--green)}
   <symbol id="ic-check-sq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol>
   <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
   <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="ic-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></symbol>
   <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></symbol>
   <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
   <symbol id="ic-transfer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17V3h10v14"/><path d="m3 21 4-4"/><path d="m21 21-4-4"/><path d="M7 13h10"/></symbol>
   <symbol id="ic-missing" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6" stroke-dasharray="2 2"/></symbol>
   <symbol id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
 </svg>
 
 <div id="app">
   <div id="sidebar">
     <div class="brand">
-      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.4</div></div>
+      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.3</div></div>
     </div>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode" style="margin: 10px 16px;">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
       <svg class="moon" style="position:absolute;left:5px;width:11px;height:11px;opacity:1"><use href="#ic-moon"/></svg>
       <svg class="sun" style="position:absolute;right:5px;width:11px;height:11px;opacity:0"><use href="#ic-sun"/></svg>
     </button>
@@ -153,7 +157,6 @@ var GAS_URL = 'https://script.google.com/macros/s/AKfycbw-IL1IPm1C0Q4hi8fBZCov95
   const theme = saved || (prefersLight ? 'light' : 'dark');
   document.documentElement.setAttribute('data-theme', theme);
 })();
-
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   const next = current === 'dark' ? 'light' : 'dark';
@@ -184,23 +187,33 @@ async function gasGet(params) {
   } catch(err) { return null; }
 }
 
+function getThumbUrl(url, size) {
+  if (!url) return '';
+  if (url.startsWith('data:')) return url;
+  if (url.includes('drive.google.com') || url.includes('googleusercontent')) {
+    const m = url.match(/[-\w]{25,}/);
+    if (m) return 'https://drive.google.com/thumbnail?id=' + m[0] + '&sz=w' + size;
+  }
+  return url;
+}
+
 function statusBadge(status) {
   const s = (status || '').toLowerCase();
   if (s.includes('rejected')) return '<span class="badge badge-red">REJECTED</span>';
   if (s.includes('verified')) return '<span class="badge badge-green">VERIFIED</span>';
-  if (s.includes('pending') || s === '') return '<span class="badge badge-amber">PENDING</span>';
+  if (s.includes('pending')) return '<span class="badge badge-amber">PENDING</span>';
   if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
   if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
-  return '<span class="badge badge-muted">' + escHtml(status || 'PENDING') + '</span>';
+  return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
 }
 
 function listStatusBadge(status) {
   const s = (status || '').toLowerCase();
-  if (s.includes('rejected') || s.includes('has rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
+  if (s.includes('rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
   if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
   if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
   if (s.includes('open')) return '<span class="badge badge-amber">OPEN</span>';
-  return '<span class="badge badge-muted">' + escHtml(status || 'OPEN') + '</span>';
+  return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
 }
 
 function barcodeDots(rec) {
@@ -228,7 +241,6 @@ function fmtDate(ts) {
     return;
   }
 
-  // Concurrent high-speed calls
   const [listsRes, cartonsRes] = await Promise.all([
     gasGet({ action: 'packingLists' }),
     gasGet({ action: 'cartons', listRef: listRef })
@@ -248,13 +260,16 @@ function fmtDate(ts) {
     return sum + 1;
   }, 0);
 
+  const hasRejected = cartons.some(c => (c.status || '').toLowerCase().includes('rejected'));
+  const allVerified = cartons.length > 0 && cartons.every(c => (c.status || '').toLowerCase().includes('verified'));
+
   let html = `
   <div class="page-header" style="align-items:center">
     <div style="display:flex;align-items:center;gap:12px">
       <a href="index.html" class="back-btn"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></a>
       <div>
         <div class="page-title"><svg><use href="#ic-list"/></svg>${escHtml(listRef)}</div>
-        <div class="page-subtitle">${escHtml(list.customer)} \u2014 ${cartons.length} ctn${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
+        <div class="page-subtitle">${escHtml(list.customer)} \u2014 ${cartons.length} carton${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
       </div>
     </div>
     <div>${listStatusBadge(list.status)}</div>
@@ -291,7 +306,7 @@ function fmtDate(ts) {
         </tr>
       </thead>
       <tbody>`;
-      
+    
     for (const c of cartons) {
       const partNoDisplay = c.parts && c.parts.length > 1 
         ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
@@ -299,12 +314,11 @@ function fmtDate(ts) {
       
       const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
       
-      // Fixed explicitly to match the direct property variables inside Code.gs
       html += `<tr class="${rowClass}">
         <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
-        <td>${escHtml(c.cartonPI || c.pi || '')}</td>
+        <td>${escHtml(c.pi || c.cartonPI || '')}</td>
         <td>${partNoDisplay}</td>
-        <td>${escHtml(c.cartonQty || c.qty || '1')}</td>
+        <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
         <td>${barcodeDots(c)}</td>
         <td>${statusBadge(c.status)}</td>
         <td class="text-muted">${fmtDate(c.timestamp)}</td>
