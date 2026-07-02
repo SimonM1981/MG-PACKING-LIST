@@ -1,6 +1,6 @@
 'use strict';
 // MG PACKING SYSTEM v3.2 — Shared JavaScript
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbyM-KW4verG3fuqT7JEfsg1292ZXNan1Kbi5SsW3PYn7ZplU-waGJJqkGXvEEs8Z-JhNg/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbzebEfg2AoS0UXiBFOL6v0zgfHPEJ3fEXx_68YJi-tNRYdR5I_w2vXA-n42dfy-KKHNFA/exec';
 
 // Detect if running on GitHub Pages (static hosting) vs GAS
 var IS_GITHUB_PAGES = window.location.hostname.indexOf('github.io') !== -1;
