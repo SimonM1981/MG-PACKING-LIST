@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Staff Entry — MG Packing</title>
 <style>
-/* ========== THEME VARIABLES ========== */
 [data-theme="dark"] {
   --bg:#0d0d0d;--bg-elevated:#121318;--card:#16181c;--border:#262830;--muted:#1e2028;
   --text:#ececec;--text-secondary:#a0a4b0;--muted-fg:#7a7f8a;--primary:#5B7CF5;--primary-dim:rgba(91,124,245,.14);
@@ -252,7 +251,6 @@ tr.clickable{cursor:pointer}
 </head>
 <body>
 
-<!-- SVG Icons -->
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
   <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
   <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
@@ -289,7 +287,6 @@ tr.clickable{cursor:pointer}
   <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
 </svg>
 
-<!-- Camera Modal -->
 <div id="camera-modal" class="modal-backdrop hidden" style="z-index:300">
   <div style="width:100%;height:100%;display:flex;flex-direction:column;background:var(--scan-bg)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(0,0,0,.85);z-index:10;flex-shrink:0">
@@ -315,13 +312,11 @@ tr.clickable{cursor:pointer}
   </div>
 </div>
 
-<!-- Lightbox -->
 <div id="lightbox" class="hidden" onclick="if(event.target===this){const lb=document.getElementById('lightbox');if(!lb.classList.contains('zoomed'))closeLightbox();}">
   <button id="lightbox-close" onclick="document.getElementById('lightbox').classList.remove('zoomed');closeLightbox();">&#x2715;</button>
   <img id="lightbox-img" src="" alt="Photo" onclick="event.stopPropagation();document.getElementById('lightbox').classList.toggle('zoomed');" />
 </div>
 
-<!-- Toast Container -->
 <div id="toast-container"></div>
 
 <div id="app">
@@ -367,23 +362,14 @@ tr.clickable{cursor:pointer}
 <script>
 'use strict';
 
-// =============================================================
-//  CONFIGURATION — VERIFY THIS IS YOUR CURRENT GAS WEB APP URL
-// =============================================================
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbyM-KW4verG3fuqT7JEfsg1292ZXNan1Kbi5SsW3PYn7ZplU-waGJJqkGXvEEs8Z-JhNg/exec';
 
-// =============================================================
-//  STATE
-// =============================================================
 let currentListId = null;
 let cameraCallback = null;
 let cameraReader = null;
 let LISTS = [];
 let isSubmitting = false;
 
-// =============================================================
-//  THEME
-// =============================================================
 (function initTheme() {
   const saved = localStorage.getItem('mg-theme');
   const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
@@ -398,9 +384,6 @@ function toggleTheme() {
   localStorage.setItem('mg-theme', next);
 }
 
-// =============================================================
-//  GAS HELPERS
-// =============================================================
 const apiCache = new Map();
 const CACHE_TTL = 60000;
 function cacheKey(params) { return JSON.stringify(params); }
@@ -446,17 +429,11 @@ async function gasPost(data) {
   return null;
 }
 
-// =============================================================
-//  FORMATTERS
-// =============================================================
 function escHtml(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(ts) { if (!ts) return '\u2014'; const d = new Date(ts); if (isNaN(d)) return String(ts).slice(0,16); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
 function fmtTime(ts) { if (!ts) return '\u2014'; const d = new Date(ts); if (isNaN(d)) return String(ts).slice(11,16); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
 function getThumbUrl(url, size) { if (!url) return ''; if (url.startsWith('data:')) return url; if (url.includes('drive.google.com') || url.includes('googleusercontent')) { const m = url.match(/[-\w]{25,}/); if (m) return 'https://drive.google.com/thumbnail?id='+m[0]+'&sz=w'+size; } return url; }
 
-// =============================================================
-//  TOAST
-// =============================================================
 function toast(msg, type) {
   const el = document.createElement('div');
   el.className = 'toast' + (type ? ' ' + type : '');
@@ -466,9 +443,6 @@ function toast(msg, type) {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 3500);
 }
 
-// =============================================================
-//  BUTTON LOADING HELPER
-// =============================================================
 function setButtonLoading(btnId, loading) {
   const btn = typeof btnId === 'string' ? document.getElementById(btnId) : btnId;
   if (!btn) return;
@@ -482,9 +456,6 @@ function setButtonLoading(btnId, loading) {
   }
 }
 
-// =============================================================
-//  IMAGE COMPRESSION — guarantees < 60 KB
-// =============================================================
 function compressImage(file, maxPx, q) {
   maxPx = maxPx || 1024;
   q = (q !== undefined) ? q : 0.7;
@@ -526,9 +497,6 @@ function compressImage(file, maxPx, q) {
   });
 }
 
-// =============================================================
-//  LIGHTBOX
-// =============================================================
 function openLightbox(src) {
   const lb = document.getElementById('lightbox');
   lb.classList.remove('zoomed');
@@ -537,9 +505,6 @@ function openLightbox(src) {
 }
 function closeLightbox() { document.getElementById('lightbox').classList.add('hidden'); }
 
-// =============================================================
-//  CAMERA / BARCODE SCANNER
-// =============================================================
 async function openCamera(label, cb) {
   cameraCallback = cb;
   document.getElementById('camera-label').textContent = 'Scan \u2014 ' + label;
@@ -575,18 +540,12 @@ function closeCamera() {
   }
 }
 
-// =============================================================
-//  SIDEBAR — highlight current page
-// =============================================================
 function initSidebar(currentPage) {
   document.querySelectorAll('nav a[data-page]').forEach(a => {
     if (a.dataset.page === currentPage) a.classList.add('active');
   });
 }
 
-// =============================================================
-//  STAFF ENTRY LOGIC
-// =============================================================
 (function() {
   initSidebar('staff');
 
