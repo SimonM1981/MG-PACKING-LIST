@@ -14,7 +14,7 @@
   --green:#22c55e;--green-dim:rgba(34,197,94,.12);--green-border:rgba(34,197,94,.35);
   --input-bg:#16181c;--overlay:rgba(0,0,0,.88);--scan-bg:#000;
   --shadow-sm:0 2px 8px rgba(0,0,0,.3);--shadow:0 8px 32px rgba(0,0,0,.4);
-  --toast-bg:#16181c;--hover-overlay:rgba(255,255,255,.02);
+  --toast-bg:#16181c;--hover-overlay:rgba(255,255,255,.04);
 }
 [data-theme="light"] {
   --bg:#f1f3f7;--bg-elevated:#ffffff;--card:#ffffff;--border:#d8dbe3;--muted:#eef0f4;
@@ -25,14 +25,14 @@
   --green:#16a34a;--green-dim:rgba(22,163,74,.08);--green-border:rgba(22,163,74,.25);
   --input-bg:#ffffff;--overlay:rgba(0,0,0,.65);--scan-bg:#1a1d29;
   --shadow-sm:0 2px 8px rgba(0,0,0,.08);--shadow:0 8px 32px rgba(0,0,0,.12);
-  --toast-bg:#ffffff;--hover-overlay:rgba(0,0,0,.02);
+  --toast-bg:#ffffff;--hover-overlay:rgba(0,0,0,.04);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;--font-mono:'SF Mono',Monaco,'Cascadia Code',monospace;--radius:14px;--radius-sm:10px}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;transition:background-color .25s ease,color .2s ease}
-#app{display:flex;height:100vh;overflow:hidden}
+#app{display:flex;height:100vh;overflow:hidden;background:var(--bg)}
 #sidebar{width:230px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;box-shadow:var(--shadow-sm);transition:background-color .25s ease,border-color .25s ease}
-#main{flex:1;overflow-y:auto;padding:24px 28px;-webkit-overflow-scrolling:touch;background:var(--bg);transition:background-color .25s ease}
+#main{flex:1;overflow-y:auto;padding:24px 28px;-webkit-overflow-scrolling:touch;background:var(--bg);transition:background-color .25s ease;min-height:100vh}
 @media(max-width:768px){
   #app{flex-direction:column;height:100vh;height:100dvh}
   #sidebar{position:fixed;bottom:0;left:0;right:0;width:100%;flex-direction:row;flex-wrap:nowrap;height:64px;z-index:50;border-right:none;border-top:1px solid var(--border);padding:0;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgba(255,255,255,.92);backdrop-filter:blur(10px)}
@@ -44,11 +44,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   #sidebar nav a svg{width:20px;height:20px}
   #main{padding:16px 16px 80px 16px}
 }
-.brand{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.brand{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--card)}
 .brand-name{font-weight:800;font-size:17px;letter-spacing:.12em;text-transform:uppercase;color:var(--primary);font-family:var(--font-mono)}
 .brand-sub{font-size:10px;color:var(--muted-fg);letter-spacing:.18em;text-transform:uppercase;margin-top:3px}
 .section-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-fg);padding:16px 16px 6px;font-weight:600}
-nav a{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin:3px 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-fg);transition:all .15s;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent;text-decoration:none}
+nav a{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;margin:3px 10px;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-fg);transition:all .15s;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent;text-decoration:none;background:transparent}
 nav a svg{width:16px;height:16px;flex-shrink:0}
 nav a:hover{background:var(--muted);color:var(--text)}
 nav a.active{background:var(--primary-dim);color:var(--primary);border-bottom-color:var(--primary)}
@@ -59,7 +59,7 @@ nav a.danger{color:var(--danger)}
 .theme-toggle svg{position:absolute;width:11px;height:11px;transition:opacity .25s ease;pointer-events:none}
 .theme-toggle .moon{left:5px;opacity:1}[data-theme="light"] .theme-toggle .moon{opacity:0}
 .theme-toggle .sun{right:5px;opacity:0}[data-theme="light"] .theme-toggle .sun{opacity:1}
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap;background:transparent}
 .page-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px;font-family:var(--font-mono)}
 .page-subtitle{font-size:12px;color:var(--muted-fg);margin-top:4px}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:22px}
@@ -73,14 +73,14 @@ nav a.danger{color:var(--danger)}
 .badge-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(59,130,246,.35)}
 .badge-muted{background:var(--muted);color:var(--muted-fg);border-color:var(--border)}
 .table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--card);box-shadow:var(--shadow-sm)}
-table{width:100%;border-collapse:collapse}
+table{width:100%;border-collapse:collapse;background:var(--card)}
 thead{background:var(--muted)}
-th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-fg);padding:10px 12px;text-align:left;white-space:nowrap;font-weight:700}
-td{padding:10px 12px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;color:var(--text)}
+th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-fg);padding:10px 12px;text-align:left;white-space:nowrap;font-weight:700;background:var(--muted)}
+td{padding:10px 12px;border-top:1px solid var(--border);font-size:13px;vertical-align:middle;color:var(--text);background:var(--card);cursor:pointer}
 tr:hover td{background:var(--hover-overlay)}
-tr.rejected td{border-left:3px solid var(--danger)}
-tr.verified td{border-left:3px solid var(--green)}
-.empty-state{text-align:center;padding:48px 16px;color:var(--muted-fg)}
+tr.rejected td{border-left:3px solid var(--danger);background:var(--card)}
+tr.verified td{border-left:3px solid var(--green);background:var(--card)}
+.empty-state{text-align:center;padding:48px 16px;color:var(--muted-fg);background:var(--bg)}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--muted-fg);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .15s;cursor:pointer;touch-action:manipulation;min-height:36px;background:var(--primary);color:#fff}
@@ -93,6 +93,37 @@ tr.verified td{border-left:3px solid var(--green)}
 .back-btn:hover{border-color:var(--primary);color:var(--primary)}
 .barcode-dot{font-size:11px;font-weight:700}
 .barcode-dot.ok{color:var(--green)}.barcode-dot.fail{color:var(--danger)}
+
+/* Modal Styles */
+.modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.modal-overlay.active{opacity:1;pointer-events:auto}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
+.modal-overlay.active .modal-content{transform:translateY(0)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--muted)}
+.modal-header h3{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.modal-body{padding:20px}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--muted)}
+.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.detail-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px}
+.detail-item.full{grid-column:1/-1}
+.detail-item .label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:4px}
+.detail-item .value{font-size:14px;font-weight:600;color:var(--text)}
+.barcode-detail{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px}
+.barcode-detail .bc-label{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted-fg);min-width:60px}
+.barcode-detail .bc-value{font-family:var(--font-mono);font-size:13px;word-break:break-all}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:12px}
+.photo-grid img{width:100%;height:120px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:transform .15s}
+.photo-grid img:hover{transform:scale(1.03)}
+.close-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.close-btn:hover{border-color:var(--danger);color:var(--danger)}
+.parts-list{display:flex;flex-direction:column;gap:6px}
+.part-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.part-row .part-no{font-family:var(--font-mono);font-size:13px;font-weight:600}
+.part-row .part-qty{font-size:12px;color:var(--muted-fg)}
+@media(max-width:640px){
+  .detail-grid{grid-template-columns:1fr}
+  .modal-content{max-height:85vh}
+}
 </style>
 </head>
 <body>
@@ -111,6 +142,7 @@ tr.verified td{border-left:3px solid var(--green)}
   <symbol id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
   <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  <symbol id="ic-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
 </svg>
 
 <div id="app">
@@ -142,6 +174,22 @@ tr.verified td{border-left:3px solid var(--green)}
   <div id="main">
     <div id="list-content">
       <div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading packing list...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Carton Detail Modal -->
+<div id="cartonModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3><svg width="18" height="18"><use href="#ic-box"/></svg> <span id="modalCartonId">Carton Detail</span></h3>
+      <button class="close-btn" onclick="closeModal()"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <!-- Populated by JS -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
     </div>
   </div>
 </div>
@@ -230,6 +278,118 @@ function fmtDate(ts) {
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 
+// Modal Functions
+var currentCartonData = null;
+
+function openModal(carton) {
+  currentCartonData = carton;
+  document.getElementById('modalCartonId').textContent = escHtml(carton.cartonId || 'Carton');
+  
+  const parts = carton.parts && carton.parts.length ? carton.parts : [{partNo: carton.partNo, qty: carton.qty || carton.cartonQty}];
+  
+  let partsHtml = '';
+  if (parts.length > 1) {
+    partsHtml = '<div class="parts-list">';
+    for (const p of parts) {
+      partsHtml += '<div class="part-row"><span class="part-no">' + escHtml(p.partNo || '') + '</span><span class="part-qty">Qty: ' + escHtml(p.qty || '1') + '</span></div>';
+    }
+    partsHtml += '</div>';
+  } else {
+    partsHtml = '<div class="value">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
+  }
+  
+  const bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  const innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  const outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  
+  let photosHtml = '';
+  const photos = carton.photos || carton.photoUrls || [];
+  if (photos && photos.length > 0) {
+    photosHtml = '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">PHOTOS</div><div class="photo-grid">';
+    for (const url of photos) {
+      if (url) {
+        const thumb = getThumbUrl(url, 400);
+        photosHtml += '<img src="' + escHtml(thumb) + '" onclick="window.open(\'' + escHtml(url) + '\',\'_blank\')" alt="Photo">';
+      }
+    }
+    photosHtml += '</div></div>';
+  }
+  
+  const html = `
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="label">Status</div>
+        <div class="value" style="margin-top:4px">${statusBadge(carton.status)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">P/I No.</div>
+        <div class="value">${escHtml(carton.pi || carton.cartonPI || '')}</div>
+      </div>
+      <div class="detail-item full">
+        <div class="label">Part Number${parts.length > 1 ? 's (' + parts.length + ' items)' : ''}</div>
+        ${partsHtml}
+      </div>
+      <div class="detail-item">
+        <div class="label">Total Qty</div>
+        <div class="value">${escHtml(carton.qty || carton.cartonQty || '1')}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Date</div>
+        <div class="value">${fmtDate(carton.timestamp)}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Packed By</div>
+        <div class="value">${escHtml(carton.packedBy || carton.createdBy || '')}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Team</div>
+        <div class="value">${escHtml(carton.team || '')}</div>
+      </div>
+    </div>
+    
+    <div style="margin-top:16px">
+      <div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">BARCODE VERIFICATION</div>
+      <div class="barcode-detail">
+        <span class="bc-label">Bag</span>
+        <span class="bc-value">${escHtml(carton.bag || '\u2014')}</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:700">${bagStatus}</span>
+      </div>
+      <div class="barcode-detail">
+        <span class="bc-label">Inner</span>
+        <span class="bc-value">${escHtml(carton.inner || '\u2014')}</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:700">${innerStatus}</span>
+      </div>
+      <div class="barcode-detail">
+        <span class="bc-label">Outer</span>
+        <span class="bc-value">${escHtml(carton.outer || '\u2014')}</span>
+        <span style="margin-left:auto;font-size:12px;font-weight:700">${outerStatus}</span>
+      </div>
+    </div>
+    
+    ${photosHtml}
+    
+    ${carton.remarks ? '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:4px">REMARKS</div><div style="padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--text)">' + escHtml(carton.remarks) + '</div></div>' : ''}
+  `;
+  
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('cartonModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('cartonModal').classList.remove('active');
+  document.body.style.overflow = '';
+  currentCartonData = null;
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === e.currentTarget) closeModal();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
 (async function() {
   initSidebar('index');
 
@@ -259,9 +419,6 @@ function fmtDate(ts) {
     if (c.parts && c.parts.length) return sum + c.parts.length;
     return sum + 1;
   }, 0);
-
-  const hasRejected = cartons.some(c => (c.status || '').toLowerCase().includes('rejected'));
-  const allVerified = cartons.length > 0 && cartons.every(c => (c.status || '').toLowerCase().includes('verified'));
 
   let html = `
   <div class="page-header" style="align-items:center">
@@ -314,7 +471,7 @@ function fmtDate(ts) {
       
       const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
       
-      html += `<tr class="${rowClass}">
+      html += `<tr class="${rowClass}" onclick="openModal(${JSON.stringify(c).replace(/"/g,'&quot;')})" style="cursor:pointer">
         <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
         <td>${escHtml(c.pi || c.cartonPI || '')}</td>
         <td>${partNoDisplay}</td>
