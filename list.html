@@ -59,7 +59,7 @@ nav a.danger{color:var(--danger)}
 .theme-toggle svg{position:absolute;width:11px;height:11px;transition:opacity .25s ease;pointer-events:none}
 .theme-toggle .moon{left:5px;opacity:1}[data-theme="light"] .theme-toggle .moon{opacity:0}
 .theme-toggle .sun{right:5px;opacity:0}[data-theme="light"] .theme-toggle .sun{opacity:1}
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap;background:transparent}
+.page-header{display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:22px;flex-wrap:wrap;background:transparent}
 .page-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px;font-family:var(--font-mono)}
 .page-subtitle{font-size:12px;color:var(--muted-fg);margin-top:4px}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:22px}
@@ -85,16 +85,24 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .15s;cursor:pointer;touch-action:manipulation;min-height:36px;background:var(--primary);color:#fff}
 .btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+.btn-green{background:var(--green);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
 .text-primary{color:var(--primary)}.text-danger{color:var(--danger)}.text-amber{color:var(--amber)}.text-green{color:var(--green)}.text-muted{color:var(--muted-fg)}
 .text-sm{font-size:12px}.text-xs{font-size:11px}.font-bold{font-weight:700}
-.mt-4{margin-top:4px}.mt-8{margin-top:8px}
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}.mb-16{margin-bottom:16px}
 .hidden{display:none!important}
 .back-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s}
 .back-btn:hover{border-color:var(--primary);color:var(--primary)}
 .barcode-dot{font-size:11px;font-weight:700}
 .barcode-dot.ok{color:var(--green)}.barcode-dot.fail{color:var(--danger)}
 
-/* Modal Styles */
+/* Tabs */
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.tab-btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--border);background:transparent;color:var(--muted-fg);cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--primary-dim);color:var(--primary);border-color:var(--primary-border)}
+.tab-btn:hover:not(.active){background:var(--muted);color:var(--text)}
+
+/* Modal */
 .modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .modal-overlay.active{opacity:1;pointer-events:auto}
 .modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
@@ -123,7 +131,12 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
 @media(max-width:640px){
   .detail-grid{grid-template-columns:1fr}
   .modal-content{max-height:85vh}
+  .page-header{flex-direction:column;align-items:flex-start}
 }
+.toast{position:fixed;top:20px;right:20px;z-index:200;background:var(--toast-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);font-size:13px;font-weight:600;transform:translateX(120%);transition:transform .3s ease}
+.toast.show{transform:translateX(0)}
+.toast-success{border-left:3px solid var(--green)}
+.toast-error{border-left:3px solid var(--danger)}
 </style>
 </head>
 <body>
@@ -142,7 +155,8 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
   <symbol id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
   <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
-  <symbol id="ic-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="ic-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
 </svg>
 
 <div id="app">
@@ -185,19 +199,42 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
       <h3><svg width="18" height="18"><use href="#ic-box"/></svg> <span id="modalCartonId">Carton Detail</span></h3>
       <button class="close-btn" onclick="closeModal()"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
     </div>
-    <div class="modal-body" id="modalBody">
-      <!-- Populated by JS -->
-    </div>
+    <div class="modal-body" id="modalBody"></div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal()">Close</button>
     </div>
   </div>
 </div>
 
+<!-- Complete Password Modal -->
+<div id="passwordModal" class="modal-overlay" onclick="closePasswordModalOnOverlay(event)">
+  <div class="modal-content" onclick="event.stopPropagation()" style="max-width:360px">
+    <div class="modal-header">
+      <h3><svg width="18" height="18"><use href="#ic-lock"/></svg> Complete Packing List</h3>
+      <button class="close-btn" onclick="closePasswordModal()"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:12px">Enter password to mark this packing list as completed.</p>
+      <input type="password" id="completePassword" placeholder="Enter password" style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:14px;outline:none">
+      <p id="passwordError" style="color:var(--danger);font-size:12px;margin-top:8px;display:none">Incorrect password.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closePasswordModal()">Cancel</button>
+      <button class="btn btn-green" onclick="confirmComplete()"><svg width="14" height="14"><use href="#ic-check"/></svg> Complete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
 <script>
 'use strict';
 
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbw-IL1IPm1C0Q4hi8fBZCov95DFJV4SKOkY3p5C5-x8n7a-iTtISrn7_mN8qc66-ri9qw/exec';
+var ALL_CARTONS = [];
+var CURRENT_LIST = null;
+var CURRENT_LIST_REF = '';
 
 (function initTheme() {
   const saved = localStorage.getItem('mg-theme');
@@ -227,6 +264,26 @@ async function gasGet(params) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 25000);
     const r = await fetch(url, { signal: ctrl.signal, redirect: 'follow' });
+    clearTimeout(t);
+    const txt = await r.text();
+    if (!txt || !txt.trim()) return null;
+    if (txt.trim().startsWith('<')) return null;
+    try { return JSON.parse(txt); } catch { return null; }
+  } catch(err) { return null; }
+}
+
+async function gasPost(params) {
+  if (!GAS_URL) return null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 25000);
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params),
+      signal: ctrl.signal,
+      redirect: 'follow'
+    });
     clearTimeout(t);
     const txt = await r.text();
     if (!txt || !txt.trim()) return null;
@@ -278,11 +335,18 @@ function fmtDate(ts) {
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 
-// Modal Functions
-var currentCartonData = null;
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-' + (type || 'success');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
 
-function openModal(carton) {
-  currentCartonData = carton;
+// Modal Functions
+function openModal(idx) {
+  const carton = ALL_CARTONS[idx];
+  if (!carton) return;
   document.getElementById('modalCartonId').textContent = escHtml(carton.cartonId || 'Carton');
   
   const parts = carton.parts && carton.parts.length ? carton.parts : [{partNo: carton.partNo, qty: carton.qty || carton.cartonQty}];
@@ -302,17 +366,32 @@ function openModal(carton) {
   const innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
   const outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
   
+  // Collect all possible photo fields
+  let allPhotos = [];
+  if (carton.photos && Array.isArray(carton.photos)) allPhotos = allPhotos.concat(carton.photos);
+  if (carton.photoUrls && Array.isArray(carton.photoUrls)) allPhotos = allPhotos.concat(carton.photoUrls);
+  if (carton.photo1) allPhotos.push(carton.photo1);
+  if (carton.photo2) allPhotos.push(carton.photo2);
+  if (carton.photo3) allPhotos.push(carton.photo3);
+  if (carton.photo4) allPhotos.push(carton.photo4);
+  if (carton.photo5) allPhotos.push(carton.photo5);
+  if (carton.bagPhoto) allPhotos.push(carton.bagPhoto);
+  if (carton.innerPhoto) allPhotos.push(carton.innerPhoto);
+  if (carton.outerPhoto) allPhotos.push(carton.outerPhoto);
+  if (carton.partPhoto) allPhotos.push(carton.partPhoto);
+  // Filter out empty
+  allPhotos = allPhotos.filter(u => u && String(u).trim().length > 0);
+  
   let photosHtml = '';
-  const photos = carton.photos || carton.photoUrls || [];
-  if (photos && photos.length > 0) {
-    photosHtml = '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">PHOTOS</div><div class="photo-grid">';
-    for (const url of photos) {
-      if (url) {
-        const thumb = getThumbUrl(url, 400);
-        photosHtml += '<img src="' + escHtml(thumb) + '" onclick="window.open(\'' + escHtml(url) + '\',\'_blank\')" alt="Photo">';
-      }
+  if (allPhotos.length > 0) {
+    photosHtml = '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">PHOTOS (' + allPhotos.length + ')</div><div class="photo-grid">';
+    for (const url of allPhotos) {
+      const thumb = getThumbUrl(url, 400);
+      photosHtml += '<img src="' + escHtml(thumb) + '" onerror="this.style.display=\'none\'" onclick="window.open(\'' + escHtml(url) + '\',\'_blank\')" alt="Photo">';
     }
     photosHtml += '</div></div>';
+  } else {
+    photosHtml = '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">PHOTOS</div><div style="padding:20px;text-align:center;color:var(--muted-fg);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">No photos available</div></div>';
   }
   
   const html = `
@@ -344,6 +423,10 @@ function openModal(carton) {
       <div class="detail-item">
         <div class="label">Team</div>
         <div class="value">${escHtml(carton.team || '')}</div>
+      </div>
+      <div class="detail-item">
+        <div class="label">Checker</div>
+        <div class="value">${escHtml(carton.checker || carton.checkedBy || '\u2014')}</div>
       </div>
     </div>
     
@@ -379,22 +462,129 @@ function openModal(carton) {
 function closeModal() {
   document.getElementById('cartonModal').classList.remove('active');
   document.body.style.overflow = '';
-  currentCartonData = null;
 }
 
 function closeModalOnOverlay(e) {
   if (e.target === e.currentTarget) closeModal();
 }
 
+// Password Modal
+function openPasswordModal() {
+  document.getElementById('completePassword').value = '';
+  document.getElementById('passwordError').style.display = 'none';
+  document.getElementById('passwordModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('completePassword').focus(), 100);
+}
+
+function closePasswordModal() {
+  document.getElementById('passwordModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function closePasswordModalOnOverlay(e) {
+  if (e.target === e.currentTarget) closePasswordModal();
+}
+
+async function confirmComplete() {
+  const pw = document.getElementById('completePassword').value.trim();
+  if (pw !== 'simon1981') {
+    document.getElementById('passwordError').style.display = 'block';
+    return;
+  }
+  document.getElementById('passwordError').style.display = 'none';
+  
+  const res = await gasPost({ action: 'completeList', listRef: CURRENT_LIST_REF, password: pw });
+  if (res && res.success) {
+    showToast('Packing list marked as COMPLETED', 'success');
+    closePasswordModal();
+    // Refresh
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast(res && res.error ? res.error : 'Failed to complete list', 'error');
+  }
+}
+
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') {
+    closeModal();
+    closePasswordModal();
+  }
+  if (e.key === 'Enter' && document.getElementById('passwordModal').classList.contains('active')) {
+    confirmComplete();
+  }
 });
+
+// Tab rendering
+function renderTable(cartons, tab) {
+  if (cartons.length === 0) {
+    return `<div class="empty-state">No cartons in this section.</div>`;
+  }
+  
+  let html = `<div class="table-wrap"><table>
+    <thead>
+      <tr>
+        <th>Carton ID</th>
+        <th>P/I No.</th>
+        <th>Part No.</th>
+        <th>Qty</th>
+        <th>Barcodes</th>
+        <th>Status</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  
+  for (let i = 0; i < cartons.length; i++) {
+    const c = cartons[i];
+    const partNoDisplay = c.parts && c.parts.length > 1 
+      ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
+      : escHtml(c.partNo || '');
+    
+    const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
+    
+    html += `<tr class="${rowClass}" onclick="openModal(${i})" style="cursor:pointer">
+      <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
+      <td>${escHtml(c.pi || c.cartonPI || '')}</td>
+      <td>${partNoDisplay}</td>
+      <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
+      <td>${barcodeDots(c)}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td class="text-muted">${fmtDate(c.timestamp)}</td>
+    </tr>`;
+  }
+  
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
+  
+  const pending = ALL_CARTONS.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return !s.includes('verified') && !s.includes('completed');
+  });
+  const completed = ALL_CARTONS.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return s.includes('verified') || s.includes('completed');
+  });
+  
+  const container = document.getElementById('table-container');
+  if (tab === 'pending') {
+    container.innerHTML = renderTable(pending, 'pending');
+  } else {
+    container.innerHTML = renderTable(completed, 'completed');
+  }
+}
 
 (async function() {
   initSidebar('index');
 
   const params = new URLSearchParams(location.search);
   const listRef = params.get('ref') || '';
+  CURRENT_LIST_REF = listRef;
 
   if (!listRef) {
     document.getElementById('list-content').innerHTML = '<div class="empty-state">No packing list specified.</div>';
@@ -409,6 +599,8 @@ document.addEventListener('keydown', function(e) {
   const lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
   const list = lists.find(l => l.listRef === listRef);
   const cartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
+  ALL_CARTONS = cartons;
+  CURRENT_LIST = list;
 
   if (!list) {
     document.getElementById('list-content').innerHTML = '<div class="empty-state">Packing list not found.</div>';
@@ -420,16 +612,30 @@ document.addEventListener('keydown', function(e) {
     return sum + 1;
   }, 0);
 
+  const pendingCount = cartons.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return !s.includes('verified') && !s.includes('completed');
+  }).length;
+  const completedCount = cartons.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return s.includes('verified') || s.includes('completed');
+  }).length;
+
+  const isCompleted = (list.status || '').toLowerCase().includes('completed');
+
   let html = `
   <div class="page-header" style="align-items:center">
     <div style="display:flex;align-items:center;gap:12px">
       <a href="index.html" class="back-btn"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></a>
       <div>
-        <div class="page-title"><svg><use href="#ic-list"/></svg>${escHtml(listRef)}</div>
+        <div class="page-title">${escHtml(listRef)}</div>
         <div class="page-subtitle">${escHtml(list.customer)} \u2014 ${cartons.length} carton${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
       </div>
     </div>
-    <div>${listStatusBadge(list.status)}</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      ${listStatusBadge(list.status)}
+      ${!isCompleted ? '<button class="btn btn-green" onclick="openPasswordModal()"><svg width="14" height="14"><use href="#ic-check"/></svg> Complete List</button>' : ''}
+    </div>
   </div>
 
   <div class="stat-grid" style="margin-bottom:22px">
@@ -445,45 +651,29 @@ document.addEventListener('keydown', function(e) {
       <div class="label">Team</div>
       <div class="value">${escHtml(list.team || '')}</div>
     </div>
-  </div>`;
+    <div class="stat-card">
+      <div class="label">Under Packing</div>
+      <div class="value text-amber">${pendingCount}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Completed</div>
+      <div class="value text-green">${completedCount}</div>
+    </div>
+  </div>
 
-  if (cartons.length === 0) {
-    html += `<div class="empty-state">No cartons in this packing list yet.</div>`;
-  } else {
-    html += `<div class="table-wrap"><table>
-      <thead>
-        <tr>
-          <th>Carton ID</th>
-          <th>P/I No.</th>
-          <th>Part No.</th>
-          <th>Qty</th>
-          <th>Barcodes</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>`;
-    
-    for (const c of cartons) {
-      const partNoDisplay = c.parts && c.parts.length > 1 
-        ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
-        : escHtml(c.partNo || '');
-      
-      const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
-      
-      html += `<tr class="${rowClass}" onclick="openModal(${JSON.stringify(c).replace(/"/g,'&quot;')})" style="cursor:pointer">
-        <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
-        <td>${escHtml(c.pi || c.cartonPI || '')}</td>
-        <td>${partNoDisplay}</td>
-        <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
-        <td>${barcodeDots(c)}</td>
-        <td>${statusBadge(c.status)}</td>
-        <td class="text-muted">${fmtDate(c.timestamp)}</td>
-      </tr>`;
-    }
-    
-    html += `</tbody></table></div>`;
-  }
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="pending" onclick="switchTab('pending')">Under Packing (${pendingCount})</button>
+    <button class="tab-btn" data-tab="completed" onclick="switchTab('completed')">Completed (${completedCount})</button>
+  </div>
+
+  <div id="table-container">`;
+  
+  html += renderTable(ALL_CARTONS.filter(c => {
+    const s = (c.status || '').toLowerCase();
+    return !s.includes('verified') && !s.includes('completed');
+  }), 'pending');
+  
+  html += `</div>`;
 
   document.getElementById('list-content').innerHTML = html;
 })();
