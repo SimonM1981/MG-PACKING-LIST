@@ -362,7 +362,7 @@ tr.clickable{cursor:pointer}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbxGNq_I1cMVtv4huxuPH2aAALf5_MeeHcaUSxytf97ZA4ahKXR-fJ5EslSzAqp3wfDFqw/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxRbHwUcRWaaLB3OLoxq977CKf24wGoCM6wCUFsuB648LlV75jbjOB9woH-Hr60XZ1feg/exec';
 
 let currentListId = null;
 let cameraCallback = null;
@@ -555,7 +555,7 @@ function initSidebar(currentPage) {
   const lookupDebounce = {};
   let isSubmitting = false;
   let editMode = false;
-  let editCartonRow = null;
+  let editCartonRows = [];
   let editCartonRef = '';
 
   async function load() {
@@ -622,59 +622,49 @@ function initSidebar(currentPage) {
 
   async function loadEditMode(pe) {
     editMode = true;
-    editCartonRow = pe.row || null;
+    editCartonRows = pe.row ? [pe.row] : [];
     formState.cartonId = pe.cartonId || '';
     try { toast('Loading carton data for editing...', 'success'); } catch(e) {}
     try {
       const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
       if (res && res.cartons && res.cartons.length > 0) {
-        const carton = res.cartons[0];
-        editCartonRow = carton.row || pe.row || null;
-        editCartonRef = carton.cartonRef || '';
-        formState.cartonId = carton.cartonId || pe.cartonId || '';
-        formState.cartonType = carton.cartonType || 'single';
-        formState.cartonPi = carton.cartonPI || '';
-        formState.cartonQty = carton.cartonQty || '1';
-        if (carton.cartonInner !== undefined) formState.cartonInner = carton.cartonInner || '';
-        if (carton.cartonOuter !== undefined) formState.cartonOuter = carton.cartonOuter || '';
+        const rows = res.cartons; // one row per part now
+        editCartonRows = rows.map(c => c.row).filter(Boolean);
+        const first = rows[0];
+        editCartonRef = first.cartonRef || '';
+        formState.cartonId = first.cartonId || pe.cartonId || '';
+        formState.cartonType = first.cartonType || 'single';
+        formState.cartonPi = first.cartonPI || first.pi || '';
+        formState.cartonQty = first.cartonQty || first.qty || '1';
+        if (first.cartonInner !== undefined) formState.cartonInner = first.cartonInner || '';
+        if (first.cartonOuter !== undefined) formState.cartonOuter = first.cartonOuter || '';
         const toMatchState = (val, hasBc) => {
           if (val === true || val === 'true') return true;
           if (val === 'no') return 'no';
           if (hasBc) return false;
           return null;
         };
-        formState.cartonInnerMatch = toMatchState(carton.cartonInnerMatch, formState.cartonInner && formState.cartonInner !== 'NO');
-        formState.cartonOuterMatch = toMatchState(carton.cartonOuterMatch, formState.cartonOuter && formState.cartonOuter !== 'NO');
-        if (carton.imgBagUrl) formState.cartonPhotos.allParts = carton.imgBagUrl;
-        if (carton.imgInnerUrl) formState.cartonPhotos.innerBox = carton.imgInnerUrl;
-        if (carton.imgCartonUrl) formState.cartonPhotos.cartonLabel = carton.imgCartonUrl;
-        if (carton.parts && carton.parts.length > 0) {
-          formState.parts = carton.parts.map(p => {
-            const hasBag = p.bag && p.bag !== 'NO';
-            const hasInner = p.inner && p.inner !== 'NO';
-            const hasOuter = p.outer && p.outer !== 'NO';
-            return {
-              partNo: p.partNo || '', pi: p.pi || '', qty: String(p.qty || '1'),
-              bag: p.bag || '', inner: p.inner || '', outer: p.outer || '',
-              bagMatch: toMatchState(p.bagMatch, hasBag),
-              innerMatch: toMatchState(p.innerMatch, hasInner),
-              outerMatch: toMatchState(p.outerMatch, hasOuter),
-              photos: p.photos || { bag: null, inner: null, outer: null }
-            };
-          });
-        } else {
-          formState.parts = [];
-          addPart();
-        }
-        
-        // FIX: For non-kit items, photos are stripped from parts JSON during save.
-        // Restore them from the top-level imgBagUrl/imgInnerUrl/imgCartonUrl fields.
-        if (formState.cartonType !== 'kit' && formState.parts.length > 0) {
-          if (carton.imgBagUrl) formState.parts[0].photos.bag = carton.imgBagUrl;
-          if (carton.imgInnerUrl) formState.parts[0].photos.inner = carton.imgInnerUrl;
-          if (carton.imgCartonUrl) formState.parts[0].photos.outer = carton.imgCartonUrl;
-        }
-        
+        formState.cartonInnerMatch = toMatchState(first.cartonInnerMatch, formState.cartonInner && formState.cartonInner !== 'NO');
+        formState.cartonOuterMatch = toMatchState(first.cartonOuterMatch, formState.cartonOuter && formState.cartonOuter !== 'NO');
+        if (first.imgBagUrl) formState.cartonPhotos.allParts = first.imgBagUrl;
+        if (first.imgInnerUrl) formState.cartonPhotos.innerBox = first.imgInnerUrl;
+        if (first.imgCartonUrl) formState.cartonPhotos.cartonLabel = first.imgCartonUrl;
+
+        formState.parts = rows.map(c => {
+          const hasBag = c.bag && c.bag !== 'NO';
+          const hasInner = c.inner && c.inner !== 'NO';
+          const hasOuter = c.outer && c.outer !== 'NO';
+          return {
+            partNo: c.partNo || '', pi: c.pi || '', qty: String(c.qty || '1'),
+            bag: c.bag || '', inner: c.inner || '', outer: c.outer || '',
+            bagMatch: toMatchState(c.bagMatch, hasBag),
+            innerMatch: toMatchState(c.innerMatch, hasInner),
+            outerMatch: toMatchState(c.outerMatch, hasOuter),
+            photos: { bag: c.imgBagUrl || null, inner: c.imgInnerUrl || null, outer: c.imgCartonUrl || null }
+          };
+        });
+        if (formState.parts.length === 0) addPart();
+
         try { toast('Carton loaded \u2014 review and resubmit', 'success'); } catch(e) {}
       } else {
         try { toast('Could not load carton data \u2014 starting fresh', 'error'); } catch(e) {}
@@ -910,7 +900,6 @@ function initSidebar(currentPage) {
     </div>`;
   }
   
-  // FIX: Use getThumbUrl for reliable image loading
   function renderPartPhoto(idx, which, label) {
     const hasPhoto = formState.parts[idx]?.photos?.[which];
     const thumbUrl = getThumbUrl(hasPhoto, 400);
@@ -924,7 +913,6 @@ function initSidebar(currentPage) {
     </div>`;
   }
   
-  // FIX: Use getThumbUrl for reliable image loading
   function renderKitPhoto(which, label) {
     const hasPhoto = formState.cartonPhotos[which];
     const thumbUrl = getThumbUrl(hasPhoto, 400);
@@ -946,7 +934,6 @@ function initSidebar(currentPage) {
   window.onKitBarcode = function(which) { const el = document.getElementById('f-kit-' + which); if (!el) return; const val = el.value.trim().toUpperCase(); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] = val; el.value = val; if (!val) { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = null; setKitBadge(which, null); updateSubmit(); return; } if (val === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce['kit-' + which]); setKitBadge(which, 'checking'); lookupDebounce['kit-' + which] = setTimeout(() => doKitLookup(which, val), 450); };
   window.syncKit = function() { if (formState.cartonType !== 'kit') return; const pi = formState.cartonPi; formState.parts.forEach(p => { p.pi = pi; }); triggerLookup(0); };
   
-  // FIX: Use getThumbUrl when updating DOM after photo capture
   window.handlePartPhoto = async function(idx, which, input) { 
     const file = input.files[0]; 
     if (!file) return; 
@@ -960,7 +947,6 @@ function initSidebar(currentPage) {
     input.value = ''; 
   };
   
-  // FIX: Use getThumbUrl when updating DOM after photo capture
   window.handleKitPhoto = async function(which, input) { 
     try { 
       const file = input.files[0]; 
@@ -1088,7 +1074,7 @@ function initSidebar(currentPage) {
 
     const recordData = {
       action: 'saveRecord',
-      row: editMode && editCartonRow ? editCartonRow : null,
+      rows: editMode && editCartonRows && editCartonRows.length ? editCartonRows : null,
       listRef: staffSelectedList.listRef,
       cartonRef: cartonRef,
       cartonId: cartonId,
@@ -1124,7 +1110,7 @@ function initSidebar(currentPage) {
     const wasEditMode = editMode;
     resetForm();
     editMode = false;
-    editCartonRow = null;
+    editCartonRows = [];
     editCartonRef = '';
     renderForm();
     toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
