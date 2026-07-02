@@ -96,41 +96,45 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
 .barcode-dot{font-size:11px;font-weight:700}
 .barcode-dot.ok{color:var(--green)}.barcode-dot.fail{color:var(--danger)}
 
-/* Tabs */
-.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:8px}
-.tab-btn{padding:8px 16px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1.5px solid var(--border);background:transparent;color:var(--muted-fg);cursor:pointer;transition:all .15s}
-.tab-btn.active{background:var(--primary-dim);color:var(--primary);border-color:var(--primary-border)}
-.tab-btn:hover:not(.active){background:var(--muted);color:var(--text)}
-
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .modal-overlay.active{opacity:1;pointer-events:auto}
-.modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
 .modal-overlay.active .modal-content{transform:translateY(0)}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--muted)}
-.modal-header h3{font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
-.modal-body{padding:20px}
-.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--muted)}
-.detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
-.detail-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px}
-.detail-item.full{grid-column:1/-1}
-.detail-item .label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:4px}
-.detail-item .value{font-size:14px;font-weight:600;color:var(--text)}
-.barcode-detail{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px}
-.barcode-detail .bc-label{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted-fg);min-width:60px}
-.barcode-detail .bc-value{font-family:var(--font-mono);font-size:13px;word-break:break-all}
-.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:12px}
-.photo-grid img{width:100%;height:120px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:transform .15s}
-.photo-grid img:hover{transform:scale(1.03)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--muted)}
+.modal-header h3{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.modal-body{padding:18px}
 .close-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
 .close-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* Checker Card Style */
+.checker-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.checker-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.checker-card-id{font-family:var(--font-mono);font-size:18px;font-weight:800;color:var(--primary)}
+.checker-section{margin-bottom:14px}
+.checker-section-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px;border-bottom:1px solid var(--border);padding-bottom:4px}
+.checker-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.checker-row:last-child{border-bottom:none}
+.checker-row .label{color:var(--muted-fg);font-size:12px}
+.checker-row .value{font-weight:600;color:var(--text)}
+.barcode-checker{display:flex;align-items:center;gap:10px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px}
+.barcode-checker .bc-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.barcode-checker .bc-icon.ok{background:var(--green-dim);color:var(--green)}
+.barcode-checker .bc-icon.fail{background:var(--danger-dim);color:var(--danger)}
+.barcode-checker .bc-icon.na{background:var(--muted);color:var(--muted-fg)}
+.barcode-checker .bc-info{flex:1}
+.barcode-checker .bc-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-fg);font-weight:700}
+.barcode-checker .bc-value{font-family:var(--font-mono);font-size:13px;word-break:break-all}
+.barcode-checker .bc-status{font-size:11px;font-weight:700}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:8px}
+.photo-grid img{width:100%;height:100px;object-fit:cover;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:transform .15s}
+.photo-grid img:hover{transform:scale(1.03)}
 .parts-list{display:flex;flex-direction:column;gap:6px}
-.part-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.part-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)}
 .part-row .part-no{font-family:var(--font-mono);font-size:13px;font-weight:600}
 .part-row .part-qty{font-size:12px;color:var(--muted-fg)}
 @media(max-width:640px){
-  .detail-grid{grid-template-columns:1fr}
-  .modal-content{max-height:85vh}
+  .modal-content{max-height:88vh}
   .page-header{flex-direction:column;align-items:flex-start}
 }
 .toast{position:fixed;top:20px;right:20px;z-index:200;background:var(--toast-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);font-size:13px;font-weight:600;transform:translateX(120%);transition:transform .3s ease}
@@ -192,17 +196,14 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
   </div>
 </div>
 
-<!-- Carton Detail Modal -->
+<!-- Carton Detail Modal (Checker Style) -->
 <div id="cartonModal" class="modal-overlay" onclick="closeModalOnOverlay(event)">
   <div class="modal-content" onclick="event.stopPropagation()">
     <div class="modal-header">
-      <h3><svg width="18" height="18"><use href="#ic-box"/></svg> <span id="modalCartonId">Carton Detail</span></h3>
+      <h3><svg width="16" height="16"><use href="#ic-box"/></svg> <span id="modalCartonId">Carton Detail</span></h3>
       <button class="close-btn" onclick="closeModal()"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
     </div>
     <div class="modal-body" id="modalBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal()">Close</button>
-    </div>
   </div>
 </div>
 
@@ -210,15 +211,15 @@ tr.verified td{border-left:3px solid var(--green);background:var(--card)}
 <div id="passwordModal" class="modal-overlay" onclick="closePasswordModalOnOverlay(event)">
   <div class="modal-content" onclick="event.stopPropagation()" style="max-width:360px">
     <div class="modal-header">
-      <h3><svg width="18" height="18"><use href="#ic-lock"/></svg> Complete Packing List</h3>
+      <h3><svg width="16" height="16"><use href="#ic-lock"/></svg> Complete Packing List</h3>
       <button class="close-btn" onclick="closePasswordModal()"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:12px">Enter password to mark this packing list as completed.</p>
+      <p style="font-size:13px;color:var(--muted-fg);margin-bottom:12px">Enter password to mark <strong id="pwListRef" style="color:var(--text)"></strong> as completed.</p>
       <input type="password" id="completePassword" placeholder="Enter password" style="width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:14px;outline:none">
       <p id="passwordError" style="color:var(--danger);font-size:12px;margin-top:8px;display:none">Incorrect password.</p>
     </div>
-    <div class="modal-footer">
+    <div class="modal-footer" style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--muted)">
       <button class="btn btn-outline" onclick="closePasswordModal()">Cancel</button>
       <button class="btn btn-green" onclick="confirmComplete()"><svg width="14" height="14"><use href="#ic-check"/></svg> Complete</button>
     </div>
@@ -359,12 +360,8 @@ function openModal(idx) {
     }
     partsHtml += '</div>';
   } else {
-    partsHtml = '<div class="value">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
+    partsHtml = '<div class="value" style="font-family:var(--font-mono);font-size:16px">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
   }
-  
-  const bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
-  const innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
-  const outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
   
   // Collect all possible photo fields
   let allPhotos = [];
@@ -379,79 +376,77 @@ function openModal(idx) {
   if (carton.innerPhoto) allPhotos.push(carton.innerPhoto);
   if (carton.outerPhoto) allPhotos.push(carton.outerPhoto);
   if (carton.partPhoto) allPhotos.push(carton.partPhoto);
-  // Filter out empty
   allPhotos = allPhotos.filter(u => u && String(u).trim().length > 0);
   
   let photosHtml = '';
   if (allPhotos.length > 0) {
-    photosHtml = '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">PHOTOS (' + allPhotos.length + ')</div><div class="photo-grid">';
+    photosHtml = '<div class="photo-grid">';
     for (const url of allPhotos) {
       const thumb = getThumbUrl(url, 400);
       photosHtml += '<img src="' + escHtml(thumb) + '" onerror="this.style.display=\'none\'" onclick="window.open(\'' + escHtml(url) + '\',\'_blank\')" alt="Photo">';
     }
-    photosHtml += '</div></div>';
+    photosHtml += '</div>';
   } else {
-    photosHtml = '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">PHOTOS</div><div style="padding:20px;text-align:center;color:var(--muted-fg);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)">No photos available</div></div>';
+    photosHtml = '<div style="padding:16px;text-align:center;color:var(--muted-fg);font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)">No photos available</div>';
   }
   
+  // Barcode checker style
+  const bagIcon = carton.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  const innerIcon = carton.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  const outerIcon = carton.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  
+  const bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  const innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  const outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  
   const html = `
-    <div class="detail-grid">
-      <div class="detail-item">
-        <div class="label">Status</div>
-        <div class="value" style="margin-top:4px">${statusBadge(carton.status)}</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">P/I No.</div>
-        <div class="value">${escHtml(carton.pi || carton.cartonPI || '')}</div>
-      </div>
-      <div class="detail-item full">
-        <div class="label">Part Number${parts.length > 1 ? 's (' + parts.length + ' items)' : ''}</div>
-        ${partsHtml}
-      </div>
-      <div class="detail-item">
-        <div class="label">Total Qty</div>
-        <div class="value">${escHtml(carton.qty || carton.cartonQty || '1')}</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">Date</div>
-        <div class="value">${fmtDate(carton.timestamp)}</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">Packed By</div>
-        <div class="value">${escHtml(carton.packedBy || carton.createdBy || '')}</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">Team</div>
-        <div class="value">${escHtml(carton.team || '')}</div>
-      </div>
-      <div class="detail-item">
-        <div class="label">Checker</div>
-        <div class="value">${escHtml(carton.checker || carton.checkedBy || '\u2014')}</div>
+    <div class="checker-card">
+      <div class="checker-card-header">
+        <div class="checker-card-id">${escHtml(carton.cartonId || '')}</div>
+        <div>${statusBadge(carton.status)}</div>
       </div>
     </div>
-    
-    <div style="margin-top:16px">
-      <div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">BARCODE VERIFICATION</div>
-      <div class="barcode-detail">
-        <span class="bc-label">Bag</span>
-        <span class="bc-value">${escHtml(carton.bag || '\u2014')}</span>
-        <span style="margin-left:auto;font-size:12px;font-weight:700">${bagStatus}</span>
+
+    <div class="checker-section">
+      <div class="checker-section-title">Part Information</div>
+      <div class="checker-row"><span class="label">Part Number${parts.length > 1 ? 's' : ''}</span><span class="value">${parts.length === 1 ? escHtml(parts[0].partNo || carton.partNo || '') : parts.length + ' items'}</span></div>
+      ${parts.length > 1 ? '<div style="margin-top:8px">' + partsHtml + '</div>' : ''}
+      <div class="checker-row"><span class="label">Total Qty</span><span class="value">${escHtml(carton.qty || carton.cartonQty || '1')}</span></div>
+      <div class="checker-row"><span class="label">P/I No.</span><span class="value">${escHtml(carton.pi || carton.cartonPI || '\u2014')}</span></div>
+    </div>
+
+    <div class="checker-section">
+      <div class="checker-section-title">Barcode Verification</div>
+      <div class="barcode-checker">
+        ${bagIcon}
+        <div class="bc-info"><div class="bc-label">Bag Barcode</div><div class="bc-value">${escHtml(carton.bag || '\u2014')}</div></div>
+        <div class="bc-status">${bagStatus}</div>
       </div>
-      <div class="barcode-detail">
-        <span class="bc-label">Inner</span>
-        <span class="bc-value">${escHtml(carton.inner || '\u2014')}</span>
-        <span style="margin-left:auto;font-size:12px;font-weight:700">${innerStatus}</span>
+      <div class="barcode-checker">
+        ${innerIcon}
+        <div class="bc-info"><div class="bc-label">Inner Barcode</div><div class="bc-value">${escHtml(carton.inner || '\u2014')}</div></div>
+        <div class="bc-status">${innerStatus}</div>
       </div>
-      <div class="barcode-detail">
-        <span class="bc-label">Outer</span>
-        <span class="bc-value">${escHtml(carton.outer || '\u2014')}</span>
-        <span style="margin-left:auto;font-size:12px;font-weight:700">${outerStatus}</span>
+      <div class="barcode-checker">
+        ${outerIcon}
+        <div class="bc-info"><div class="bc-label">Outer Barcode</div><div class="bc-value">${escHtml(carton.outer || '\u2014')}</div></div>
+        <div class="bc-status">${outerStatus}</div>
       </div>
     </div>
-    
-    ${photosHtml}
-    
-    ${carton.remarks ? '<div style="margin-top:16px"><div class="label" style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:4px">REMARKS</div><div style="padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--text)">' + escHtml(carton.remarks) + '</div></div>' : ''}
+
+    <div class="checker-section">
+      <div class="checker-section-title">Photos</div>
+      ${photosHtml}
+    </div>
+
+    <div class="checker-section">
+      <div class="checker-section-title">Metadata</div>
+      <div class="checker-row"><span class="label">Packed By</span><span class="value">${escHtml(carton.packedBy || carton.createdBy || '\u2014')}</span></div>
+      <div class="checker-row"><span class="label">Team</span><span class="value">${escHtml(carton.team || '\u2014')}</span></div>
+      <div class="checker-row"><span class="label">Checker</span><span class="value">${escHtml(carton.checker || carton.checkedBy || '\u2014')}</span></div>
+      <div class="checker-row"><span class="label">Date</span><span class="value">${fmtDate(carton.timestamp)}</span></div>
+      ${carton.remarks ? '<div class="checker-row" style="flex-direction:column;align-items:flex-start;gap:4px"><span class="label">Remarks</span><span class="value" style="font-weight:400;color:var(--text-secondary)">' + escHtml(carton.remarks) + '</span></div>' : ''}
+    </div>
   `;
   
   document.getElementById('modalBody').innerHTML = html;
@@ -472,6 +467,7 @@ function closeModalOnOverlay(e) {
 function openPasswordModal() {
   document.getElementById('completePassword').value = '';
   document.getElementById('passwordError').style.display = 'none';
+  document.getElementById('pwListRef').textContent = CURRENT_LIST_REF;
   document.getElementById('passwordModal').classList.add('active');
   document.body.style.overflow = 'hidden';
   setTimeout(() => document.getElementById('completePassword').focus(), 100);
@@ -498,7 +494,6 @@ async function confirmComplete() {
   if (res && res.success) {
     showToast('Packing list marked as COMPLETED', 'success');
     closePasswordModal();
-    // Refresh
     setTimeout(() => location.reload(), 800);
   } else {
     showToast(res && res.error ? res.error : 'Failed to complete list', 'error');
@@ -514,70 +509,6 @@ document.addEventListener('keydown', function(e) {
     confirmComplete();
   }
 });
-
-// Tab rendering
-function renderTable(cartons, tab) {
-  if (cartons.length === 0) {
-    return `<div class="empty-state">No cartons in this section.</div>`;
-  }
-  
-  let html = `<div class="table-wrap"><table>
-    <thead>
-      <tr>
-        <th>Carton ID</th>
-        <th>P/I No.</th>
-        <th>Part No.</th>
-        <th>Qty</th>
-        <th>Barcodes</th>
-        <th>Status</th>
-        <th>Date</th>
-      </tr>
-    </thead>
-    <tbody>`;
-  
-  for (let i = 0; i < cartons.length; i++) {
-    const c = cartons[i];
-    const partNoDisplay = c.parts && c.parts.length > 1 
-      ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
-      : escHtml(c.partNo || '');
-    
-    const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
-    
-    html += `<tr class="${rowClass}" onclick="openModal(${i})" style="cursor:pointer">
-      <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
-      <td>${escHtml(c.pi || c.cartonPI || '')}</td>
-      <td>${partNoDisplay}</td>
-      <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
-      <td>${barcodeDots(c)}</td>
-      <td>${statusBadge(c.status)}</td>
-      <td class="text-muted">${fmtDate(c.timestamp)}</td>
-    </tr>`;
-  }
-  
-  html += `</tbody></table></div>`;
-  return html;
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
-  
-  const pending = ALL_CARTONS.filter(c => {
-    const s = (c.status || '').toLowerCase();
-    return !s.includes('verified') && !s.includes('completed');
-  });
-  const completed = ALL_CARTONS.filter(c => {
-    const s = (c.status || '').toLowerCase();
-    return s.includes('verified') || s.includes('completed');
-  });
-  
-  const container = document.getElementById('table-container');
-  if (tab === 'pending') {
-    container.innerHTML = renderTable(pending, 'pending');
-  } else {
-    container.innerHTML = renderTable(completed, 'completed');
-  }
-}
 
 (async function() {
   initSidebar('index');
@@ -612,15 +543,6 @@ function switchTab(tab) {
     return sum + 1;
   }, 0);
 
-  const pendingCount = cartons.filter(c => {
-    const s = (c.status || '').toLowerCase();
-    return !s.includes('verified') && !s.includes('completed');
-  }).length;
-  const completedCount = cartons.filter(c => {
-    const s = (c.status || '').toLowerCase();
-    return s.includes('verified') || s.includes('completed');
-  }).length;
-
   const isCompleted = (list.status || '').toLowerCase().includes('completed');
 
   let html = `
@@ -652,28 +574,53 @@ function switchTab(tab) {
       <div class="value">${escHtml(list.team || '')}</div>
     </div>
     <div class="stat-card">
-      <div class="label">Under Packing</div>
-      <div class="value text-amber">${pendingCount}</div>
+      <div class="label">Total Cartons</div>
+      <div class="value">${cartons.length}</div>
     </div>
     <div class="stat-card">
-      <div class="label">Completed</div>
-      <div class="value text-green">${completedCount}</div>
+      <div class="label">Total Parts</div>
+      <div class="value">${totalParts}</div>
     </div>
-  </div>
+  </div>`;
 
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="pending" onclick="switchTab('pending')">Under Packing (${pendingCount})</button>
-    <button class="tab-btn" data-tab="completed" onclick="switchTab('completed')">Completed (${completedCount})</button>
-  </div>
-
-  <div id="table-container">`;
-  
-  html += renderTable(ALL_CARTONS.filter(c => {
-    const s = (c.status || '').toLowerCase();
-    return !s.includes('verified') && !s.includes('completed');
-  }), 'pending');
-  
-  html += `</div>`;
+  if (cartons.length === 0) {
+    html += `<div class="empty-state">No cartons in this packing list yet.</div>`;
+  } else {
+    html += `<div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th>Carton ID</th>
+          <th>P/I No.</th>
+          <th>Part No.</th>
+          <th>Qty</th>
+          <th>Barcodes</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>`;
+    
+    for (let i = 0; i < cartons.length; i++) {
+      const c = cartons[i];
+      const partNoDisplay = c.parts && c.parts.length > 1 
+        ? escHtml(c.parts[0].partNo || '') + ' <span class="text-muted">+' + (c.parts.length - 1) + ' MORE</span>'
+        : escHtml(c.partNo || '');
+      
+      const rowClass = (c.status || '').toLowerCase().includes('rejected') ? 'rejected' : (c.status || '').toLowerCase().includes('verified') ? 'verified' : '';
+      
+      html += `<tr class="${rowClass}" onclick="openModal(${i})" style="cursor:pointer">
+        <td><strong class="text-primary">${escHtml(c.cartonId)}</strong></td>
+        <td>${escHtml(c.pi || c.cartonPI || '')}</td>
+        <td>${partNoDisplay}</td>
+        <td>${escHtml(c.qty || c.cartonQty || '1')}</td>
+        <td>${barcodeDots(c)}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td class="text-muted">${fmtDate(c.timestamp)}</td>
+      </tr>`;
+    }
+    
+    html += `</tbody></table></div>`;
+  }
 
   document.getElementById('list-content').innerHTML = html;
 })();
