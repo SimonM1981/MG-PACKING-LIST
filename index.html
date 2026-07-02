@@ -92,6 +92,31 @@ nav a.danger{color:var(--danger)}
 .list-card-stat{text-align:center}
 .list-card-stat .num{font-size:18px;font-weight:700;color:var(--text);display:block}
 .list-card-stat .lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg);margin-top:2px}
+
+/* Button */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .15s;cursor:pointer;touch-action:manipulation;min-height:36px;background:var(--primary);color:#fff}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border)}
+.btn-green{background:var(--green);color:#fff}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.modal-overlay.active{opacity:1;pointer-events:auto}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
+.modal-overlay.active .modal-content{transform:translateY(0)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--muted)}
+.modal-header h3{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
+.modal-body{padding:18px}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--muted)}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-fg);margin-bottom:6px}
+.form-input{width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--primary)}
+.close-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.close-btn:hover{border-color:var(--danger);color:var(--danger)}
+.toast{position:fixed;top:20px;right:20px;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;box-shadow:var(--shadow);font-size:13px;font-weight:600;transform:translateX(120%);transition:transform .3s ease}
+.toast.show{transform:translateX(0)}
+.toast-success{border-left:3px solid var(--green)}
+.toast-error{border-left:3px solid var(--danger)}
 </style>
 </head>
 <body>
@@ -106,6 +131,7 @@ nav a.danger{color:var(--danger)}
   <symbol id="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
   <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
   <symbol id="ic-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
 </svg>
 
 <div id="app">
@@ -141,10 +167,41 @@ nav a.danger{color:var(--danger)}
   </div>
 </div>
 
+<!-- Create Packing List Modal -->
+<div id="createModal" class="modal-overlay" onclick="closeCreateModalOnOverlay(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3><svg width="16" height="16"><use href="#ic-plus"/></svg> Create Packing List</h3>
+      <button class="close-btn" onclick="closeCreateModal()"><svg width="14" height="14"><use href="#ic-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Customer <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="newCustomer" class="form-input" placeholder="Enter customer name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Created By <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="newCreatedBy" class="form-input" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Team</label>
+        <input type="text" id="newTeam" class="form-input" placeholder="e.g. Team A, Team B...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn btn-green" onclick="submitCreateList()"><svg width="14" height="14"><use href="#ic-plus"/></svg> Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbzVzcGU8RO0kFXsYtkq8b9tufFeA4mpEPts99B8pAHRo9powvxe7Hg4VYwGfvZZXFOoqA/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbytodVpWD4hc0W1mpQPzIe9pgK4OlPA_UVgC9mh1BYRtxUkEhhuninMLflFRwFvP4xZ7g/exec';
 var ALL_LISTS = [];
 
 (function initTheme() {
@@ -183,11 +240,32 @@ async function gasGet(params) {
   } catch(err) { return null; }
 }
 
+async function gasPost(params) {
+  if (!GAS_URL) return null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 25000);
+    const r = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(params),
+      signal: ctrl.signal,
+      redirect: 'follow'
+    });
+    clearTimeout(t);
+    const txt = await r.text();
+    if (!txt || !txt.trim()) return null;
+    if (txt.trim().startsWith('<')) return null;
+    try { return JSON.parse(txt); } catch { return null; }
+  } catch(err) { return null; }
+}
+
 function listStatusBadge(status) {
   const s = (status || '').toLowerCase();
   if (s.includes('rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
   if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
   if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
+  if (s.includes('verified')) return '<span class="badge badge-green">VERIFIED</span>';
   if (s.includes('open')) return '<span class="badge badge-amber">OPEN</span>';
   return '<span class="badge badge-muted">' + escHtml(status || 'UNKNOWN') + '</span>';
 }
@@ -198,6 +276,58 @@ function fmtDate(ts) {
   if (isNaN(d)) return String(ts).slice(0,10);
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
 }
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-' + (type || 'success');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Modal Functions
+function openCreateModal() {
+  document.getElementById('newCustomer').value = '';
+  document.getElementById('newCreatedBy').value = '';
+  document.getElementById('newTeam').value = '';
+  document.getElementById('createModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('newCustomer').focus(), 100);
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function closeCreateModalOnOverlay(e) {
+  if (e.target === e.currentTarget) closeCreateModal();
+}
+
+async function submitCreateList() {
+  const customer = document.getElementById('newCustomer').value.trim();
+  const createdBy = document.getElementById('newCreatedBy').value.trim();
+  const team = document.getElementById('newTeam').value.trim();
+
+  if (!customer) { showToast('Customer is required', 'error'); return; }
+  if (!createdBy) { showToast('Created By is required', 'error'); return; }
+
+  const res = await gasPost({ action: 'createPackingList', customer: customer, createdBy: createdBy, team: team });
+  if (res && res.success) {
+    showToast('Packing list ' + res.listRef + ' created!', 'success');
+    closeCreateModal();
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast(res && res.error ? res.error : 'Failed to create list', 'error');
+  }
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeCreateModal();
+  if (e.key === 'Enter' && document.getElementById('createModal').classList.contains('active')) {
+    submitCreateList();
+  }
+});
 
 function renderLists(tab) {
   const container = document.getElementById('lists-grid');
@@ -255,6 +385,7 @@ function switchTab(tab) {
       <div class="page-title">Packing Lists</div>
       <div class="page-subtitle">${ALL_LISTS.length} total list${ALL_LISTS.length!==1?'s':''}</div>
     </div>
+    <button class="btn btn-green" onclick="openCreateModal()"><svg width="14" height="14"><use href="#ic-plus"/></svg> New Packing List</button>
   </div>
 
   <div class="tab-bar">
