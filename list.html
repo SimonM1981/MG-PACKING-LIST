@@ -1,7 +1,6 @@
 <script>
 'use strict';
 
-// URL configuration
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbyM-KW4verG3fuqT7JEfsg1292ZXNan1Kbi5SsW3PYn7ZplU-waGJJqkGXvEEs8Z-JhNg/exec';
 
 (function initTheme() {
@@ -63,7 +62,7 @@ function statusBadge(status) {
 
 function listStatusBadge(status) {
   const s = (status || '').toLowerCase();
-  if (s.includes('rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
+  if (s.includes('rejected') || s.includes('has rejected')) return '<span class="badge badge-red">HAS REJECTED</span>';
   if (s.includes('completed')) return '<span class="badge badge-green">COMPLETED</span>';
   if (s.includes('partial')) return '<span class="badge badge-blue">PARTIAL</span>';
   if (s.includes('open')) return '<span class="badge badge-amber">OPEN</span>';
@@ -84,7 +83,7 @@ function fmtDate(ts) {
   return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 
-// Optimized Data Load Engine
+// RESTORED ENGINE: Runs both queries concurrently using the newly optimized backend
 (async function() {
   initSidebar('index');
 
@@ -96,30 +95,19 @@ function fmtDate(ts) {
     return;
   }
 
-  // OPTIMIZATION: We fetch the specific list structural fields dynamically from the cartons array context or fallback cleanly 
-  const cartonsRes = await gasGet({ action: 'cartons', listRef: listRef });
+  // Fetch both sets of data simultaneously. Since the backend functions are fast now, this will finish in under a second.
+  const [listsRes, cartonsRes] = await Promise.all([
+    gasGet({ action: 'packingLists' }),
+    gasGet({ action: 'cartons', listRef: listRef })
+  ]);
+
+  const lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
+  const list = lists.find(l => l.listRef === listRef);
   const cartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
 
-  // Fallback structural object layout to ensure layout matches your dashboard layout completely
-  let metaInfo = {
-    customer: cartons.length > 0 ? (cartons[0].customer || "Unknown Customer") : "No Data Available",
-    createdBy: cartons.length > 0 ? (cartons[0].packedBy || "Staff Member") : "N/A",
-    team: cartons.length > 0 ? "Warehouse Team" : "N/A",
-    status: "open"
-  };
-
-  // Dynamically evaluate modern context flag status from pulled context array rows
-  if (cartons.length > 0) {
-    const hasRejected = cartons.some(c => (c.status || '').toLowerCase().includes('rejected'));
-    const allVerified = cartons.every(c => (c.status || '').toLowerCase().includes('verified'));
-    const hasPending  = cartons.some(c => {
-      const s = (c.status || '').toLowerCase();
-      return !s || s === '' || s === 'pending';
-    });
-
-    if (hasRejected)      metaInfo.status = 'rejected';
-    else if (allVerified) metaInfo.status = 'completed';
-    else if (!hasPending) metaInfo.status = 'partial';
+  if (!list) {
+    document.getElementById('list-content').innerHTML = '<div class="empty-state">Packing list not found.</div>';
+    return;
   }
 
   const totalParts = cartons.reduce((sum, c) => {
@@ -133,24 +121,24 @@ function fmtDate(ts) {
       <a href="index.html" class="back-btn"><svg style="width:16px;height:16px"><use href="#ic-back"/></svg></a>
       <div>
         <div class="page-title"><svg><use href="#ic-list"/></svg>${escHtml(listRef)}</div>
-        <div class="page-subtitle">${escHtml(metaInfo.customer)} \u2014 ${cartons.length} carton${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
+        <div class="page-subtitle">${escHtml(list.customer)} \u2014 ${cartons.length} ctn${cartons.length!==1?'s':''} \u2014 ${totalParts} part${totalParts!==1?'s':''} total</div>
       </div>
     </div>
-    <div>${listStatusBadge(metaInfo.status)}</div>
+    <div>${listStatusBadge(list.status)}</div>
   </div>
 
   <div class="stat-grid" style="margin-bottom:22px">
     <div class="stat-card">
       <div class="label">Customer</div>
-      <div class="value text-primary">${escHtml(metaInfo.customer)}</div>
+      <div class="value text-primary">${escHtml(list.customer)}</div>
     </div>
     <div class="stat-card">
       <div class="label">Packed By</div>
-      <div class="value">${escHtml(metaInfo.createdBy || '')}</div>
+      <div class="value">${escHtml(list.createdBy || '')}</div>
     </div>
     <div class="stat-card">
       <div class="label">Team</div>
-      <div class="value">${escHtml(metaInfo.team || '')}</div>
+      <div class="value">${escHtml(list.team || '')}</div>
     </div>
   </div>`;
 
