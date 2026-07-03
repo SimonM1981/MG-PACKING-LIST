@@ -362,7 +362,7 @@ tr.clickable{cursor:pointer}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbzGW-sIKLQ1kKO8Q3r4leMCZL27BjxPri-moh6yF9Vfg3hGkYch1OFj9C99ZA9fm9b1EQ/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbz0pv1JdCi9HjZ7XMzx2p9wuEMoGM2GeG9hckfMonzkaucf4i1M1kKzxwFufx0ecwWq5A/exec';
 
 let currentListId = null;
 let cameraCallback = null;
@@ -1063,11 +1063,13 @@ function initSidebar(currentPage) {
 
   async function doKitLookup(which, barcode) {
     if (formState.cartonKitMatch !== true) { setKitBadge(which, false); updateSubmit(); return; }
-    const repPartNo = formState.parts[0]?.partNo || '';
-    const key = barcode + '|' + formState.cartonKit + '|' + repPartNo + '|kit-' + which;
+    // The shared Inner/Outer carton barcode lives on the Master Register row
+    // whose Part No equals the KIT No itself (not any individual item's
+    // Part No) — so that's the identity key we look up by.
+    const key = barcode + '|' + formState.cartonKit + '|kit-' + which;
     if (lookupCache[key] !== undefined) { applyKitResult(which, barcode, lookupCache[key]); return; }
     try {
-      const res = await gasGet({ action: 'lookup', barcode, partNo: repPartNo, which: which, mode: 'kit', kit: formState.cartonKit });
+      const res = await gasGet({ action: 'lookup', barcode, partNo: formState.cartonKit, which: which, mode: 'kit', kit: formState.cartonKit });
       if (res === null) { setKitBadge(which, 'no-server'); updateSubmit(); return; }
       lookupCache[key] = res;
       applyKitResult(which, barcode, res);
