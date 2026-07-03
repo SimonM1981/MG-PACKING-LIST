@@ -101,7 +101,7 @@ tr.selected td{background:rgba(91,124,245,.15)}
 /* Modal */
 .modal-overlay{position:fixed;inset:0;background:var(--overlay);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .modal-overlay.active{opacity:1;pointer-events:auto}
-.modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow);transform:translateY(20px);transition:transform .25s ease}
 .modal-overlay.active .modal-content{transform:translateY(0)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--muted)}
 .modal-header h3{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:8px}
@@ -135,6 +135,13 @@ tr.selected td{background:rgba(91,124,245,.15)}
 .part-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)}
 .part-row .part-no{font-family:var(--font-mono);font-size:13px;font-weight:600}
 .part-row .part-qty{font-size:12px;color:var(--muted-fg)}
+
+/* Part block for kits */
+.part-block{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px}
+.part-block-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.part-block-title{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--primary)}
+.part-block-sub{font-size:11px;color:var(--muted-fg)}
+
 @media(max-width:640px){
   .modal-content{max-height:88vh}
   .page-header{flex-direction:column;align-items:flex-start}
@@ -411,7 +418,7 @@ function collectPhotos(carton) {
 }
 
 // ============================================================
-// NEW: Group raw sheet rows by cartonId, merge parts, sort A-Z
+// Group raw sheet rows by cartonId, merge parts, sort A-Z
 // ============================================================
 function processCartons(rawCartons) {
   if (!Array.isArray(rawCartons)) return [];
@@ -421,7 +428,6 @@ function processCartons(rawCartons) {
     var id = String(c.cartonId || c.CartonId || c.cartonID || '').trim();
     if (!id) id = 'UNKNOWN';
     if (!map[id]) {
-      // First time seeing this carton — keep all common fields
       map[id] = {};
       for (var k in c) {
         if (c.hasOwnProperty(k)) {
@@ -430,21 +436,26 @@ function processCartons(rawCartons) {
       }
       map[id].parts = [];
       map[id]._rows = [];
+      map[id].allPhotos = [];
     }
-    // Add part info
+    // Capture part with its own barcodes
     var partNo = c.partNo || c.PartNo || c.partNumber || '';
     var qty = c.qty || c.Qty || c.cartonQty || c.quantity || '1';
     if (partNo || qty) {
       map[id].parts.push({
         partNo: String(partNo),
-        qty: String(qty)
+        qty: String(qty),
+        bag: c.bag || c.BagBarcode || c.bagBarcode || '',
+        inner: c.inner || c.InnerBarcode || c.innerBarcode || '',
+        outer: c.outer || c.OuterBarcode || c.outerBarcode || '',
+        bagMatch: !!c.bagMatch || !!c.BagMatch,
+        innerMatch: !!c.innerMatch || !!c.InnerMatch,
+        outerMatch: !!c.outerMatch || !!c.OuterMatch
       });
     }
-    // Keep row reference for transfer/edit
     if (c.row) map[id]._rows.push(c.row);
-    // Merge photos from all rows
+    // Merge photos
     var rowPhotos = collectPhotos(c);
-    if (!map[id].allPhotos) map[id].allPhotos = [];
     for (var p = 0; p < rowPhotos.length; p++) {
       if (map[id].allPhotos.indexOf(rowPhotos[p]) === -1) {
         map[id].allPhotos.push(rowPhotos[p]);
@@ -457,30 +468,53 @@ function processCartons(rawCartons) {
       result.push(map[key]);
     }
   }
-  // Sort alphabetically by cartonId (A001, A002, M001...)
   result.sort(function(a, b) {
     return String(a.cartonId).localeCompare(String(b.cartonId));
   });
   return result;
 }
 
+// Helper: build barcode-checker HTML for a single part
+function partBarcodeHtml(part) {
+  var bagIcon = part.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (part.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  var innerIcon = part.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (part.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  var outerIcon = part.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (part.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+  var bagStatus = part.bagMatch ? '<span class="text-green">MATCH</span>' : (part.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  var innerStatus = part.innerMatch ? '<span class="text-green">MATCH</span>' : (part.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  var outerStatus = part.outerMatch ? '<span class="text-green">MATCH</span>' : (part.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  
+  return '<div class="barcode-checker">' + bagIcon + '<div class="bc-info"><div class="bc-label">Bag Barcode</div><div class="bc-value">' + escHtml(part.bag || '\u2014') + '</div></div><div class="bc-status">' + bagStatus + '</div></div>' +
+         '<div class="barcode-checker">' + innerIcon + '<div class="bc-info"><div class="bc-label">Inner Barcode</div><div class="bc-value">' + escHtml(part.inner || '\u2014') + '</div></div><div class="bc-status">' + innerStatus + '</div></div>' +
+         '<div class="barcode-checker">' + outerIcon + '<div class="bc-info"><div class="bc-label">Outer Barcode</div><div class="bc-value">' + escHtml(part.outer || '\u2014') + '</div></div><div class="bc-status">' + outerStatus + '</div></div>';
+}
+
 function openModal(idx) {
   const carton = ALL_CARTONS[idx];
   if (!carton) return;
   document.getElementById('modalCartonId').textContent = escHtml(carton.cartonId || 'Carton');
-  const parts = carton.parts && carton.parts.length ? carton.parts : [{partNo: carton.partNo, qty: carton.qty || carton.cartonQty}];
+  
+  var parts = carton.parts && carton.parts.length ? carton.parts : [{partNo: carton.partNo, qty: carton.qty || carton.cartonQty}];
+  var allPhotos = carton.allPhotos && carton.allPhotos.length ? carton.allPhotos : collectPhotos(carton);
+  
   var partsHtml = '';
+  
   if (parts.length > 1) {
-    partsHtml = '<div class="parts-list">';
+    // KIT / Multiple parts — show each part with its own barcodes
     for (var pi = 0; pi < parts.length; pi++) {
       var p = parts[pi];
-      partsHtml += '<div class="part-row"><span class="part-no">' + escHtml(p.partNo || '') + '</span><span class="part-qty">Qty: ' + escHtml(p.qty || '1') + '</span></div>';
+      partsHtml += '<div class="part-block">' +
+        '<div class="part-block-header">' +
+          '<div class="part-block-title">' + escHtml(p.partNo || 'Unknown Part') + '</div>' +
+          '<div class="part-block-sub">Qty: ' + escHtml(p.qty || '1') + '</div>' +
+        '</div>' +
+        partBarcodeHtml(p) +
+      '</div>';
     }
-    partsHtml += '</div>';
   } else {
+    // Single part — simple display + carton-level barcodes
     partsHtml = '<div class="value" style="font-family:var(--font-mono);font-size:16px">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
   }
-  var allPhotos = carton.allPhotos && carton.allPhotos.length ? carton.allPhotos : collectPhotos(carton);
+  
   var photosHtml = '';
   if (allPhotos.length > 0) {
     photosHtml = '<div class="photo-grid">';
@@ -493,12 +527,29 @@ function openModal(idx) {
   } else {
     photosHtml = '<div style="padding:16px;text-align:center;color:var(--muted-fg);font-size:13px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm)">No photos available</div>';
   }
-  var bagIcon = carton.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
-  var innerIcon = carton.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
-  var outerIcon = carton.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
-  var bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
-  var innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
-  var outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+  
+  // For single part, use carton-level barcodes; for multiple, barcodes are shown per-part above
+  var barcodeSection = '';
+  if (parts.length === 1) {
+    var bagIcon = carton.bagMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.bag ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+    var innerIcon = carton.innerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.inner ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+    var outerIcon = carton.outerMatch ? '<div class="bc-icon ok">\u2713</div>' : (carton.outer ? '<div class="bc-icon fail">\u2717</div>' : '<div class="bc-icon na">\u2014</div>');
+    var bagStatus = carton.bagMatch ? '<span class="text-green">MATCH</span>' : (carton.bag ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+    var innerStatus = carton.innerMatch ? '<span class="text-green">MATCH</span>' : (carton.inner ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+    var outerStatus = carton.outerMatch ? '<span class="text-green">MATCH</span>' : (carton.outer ? '<span class="text-danger">MISMATCH</span>' : '<span class="text-muted">NOT SCANNED</span>');
+    barcodeSection = '<div class="checker-section">' +
+      '<div class="checker-section-title">Barcode Verification</div>' +
+      '<div class="barcode-checker">' + bagIcon + '<div class="bc-info"><div class="bc-label">Bag Barcode</div><div class="bc-value">' + escHtml(carton.bag || '\u2014') + '</div></div><div class="bc-status">' + bagStatus + '</div></div>' +
+      '<div class="barcode-checker">' + innerIcon + '<div class="bc-info"><div class="bc-label">Inner Barcode</div><div class="bc-value">' + escHtml(carton.inner || '\u2014') + '</div></div><div class="bc-status">' + innerStatus + '</div></div>' +
+      '<div class="barcode-checker">' + outerIcon + '<div class="bc-info"><div class="bc-label">Outer Barcode</div><div class="bc-value">' + escHtml(carton.outer || '\u2014') + '</div></div><div class="bc-status">' + outerStatus + '</div></div>' +
+    '</div>';
+  } else {
+    barcodeSection = '<div class="checker-section">' +
+      '<div class="checker-section-title">Barcode Verification (Per Part)</div>' + partsHtml +
+    '</div>';
+    partsHtml = ''; // Already included inside barcode section
+  }
+  
   var html = 
     '<div class="checker-card">' +
       '<div class="checker-card-header">' +
@@ -509,16 +560,11 @@ function openModal(idx) {
     '<div class="checker-section">' +
       '<div class="checker-section-title">Part Information</div>' +
       '<div class="checker-row"><span class="label">Part Number' + (parts.length > 1 ? 's' : '') + '</span><span class="value">' + (parts.length === 1 ? escHtml(parts[0].partNo || carton.partNo || '') : parts.length + ' items') + '</span></div>' +
-      (parts.length > 1 ? '<div style="margin-top:8px">' + partsHtml + '</div>' : '') +
+      (parts.length === 1 && partsHtml ? '<div style="margin-top:8px">' + partsHtml + '</div>' : '') +
       '<div class="checker-row"><span class="label">Total Qty</span><span class="value">' + escHtml(carton.qty || carton.cartonQty || '1') + '</span></div>' +
       '<div class="checker-row"><span class="label">P/I No.</span><span class="value">' + escHtml(carton.pi || carton.cartonPI || '\u2014') + '</span></div>' +
     '</div>' +
-    '<div class="checker-section">' +
-      '<div class="checker-section-title">Barcode Verification</div>' +
-      '<div class="barcode-checker">' + bagIcon + '<div class="bc-info"><div class="bc-label">Bag Barcode</div><div class="bc-value">' + escHtml(carton.bag || '\u2014') + '</div></div><div class="bc-status">' + bagStatus + '</div></div>' +
-      '<div class="barcode-checker">' + innerIcon + '<div class="bc-info"><div class="bc-label">Inner Barcode</div><div class="bc-value">' + escHtml(carton.inner || '\u2014') + '</div></div><div class="bc-status">' + innerStatus + '</div></div>' +
-      '<div class="barcode-checker">' + outerIcon + '<div class="bc-info"><div class="bc-label">Outer Barcode</div><div class="bc-value">' + escHtml(carton.outer || '\u2014') + '</div></div><div class="bc-status">' + outerStatus + '</div></div>' +
-    '</div>' +
+    barcodeSection +
     '<div class="checker-section">' +
       '<div class="checker-section-title">Photos (' + allPhotos.length + ')</div>' + photosHtml +
     '</div>' +
@@ -586,7 +632,6 @@ function openTransferModal() {
   document.getElementById('trNewPrefix').value = '';
   document.getElementById('trReason').value = '';
   
-  // Build carton list
   var listHtml = '';
   for (var i = 0; i < ALL_CARTONS.length; i++) {
     var c = ALL_CARTONS[i];
@@ -600,7 +645,6 @@ function openTransferModal() {
   }
   document.getElementById('trCartonList').innerHTML = listHtml;
   
-  // Populate destination lists
   var select = document.getElementById('trToList');
   select.innerHTML = '<option value="">-- Select destination --</option>';
   for (var j = 0; j < ALL_LISTS.length; j++) {
@@ -649,7 +693,6 @@ async function submitTransfer() {
   var cartonIds = [];
   SELECTED_CARTONS.forEach(function(idx) {
     var c = ALL_CARTONS[idx];
-    // Send all row references for this carton (kit may have multiple rows)
     var rows = c._rows && c._rows.length ? c._rows : [c.row];
     for (var r = 0; r < rows.length; r++) {
       cartons.push({ cartonRef: c.cartonRef, cartonId: c.cartonId, row: rows[r] });
@@ -707,9 +750,6 @@ document.addEventListener('keydown', function(e) {
   ALL_LISTS = lists;
   var list = lists.find(function(l) { return l.listRef === listRef; });
   
-  // ============================================
-  // FIX: Group and sort cartons before display
-  // ============================================
   var rawCartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
   var cartons = processCartons(rawCartons);
   
