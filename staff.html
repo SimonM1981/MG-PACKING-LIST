@@ -976,7 +976,7 @@ function initSidebar(currentPage) {
       formState.cartonKitMatch = null;
       setKitNoBadge(null);
       updateSubmit();
-      renderParts();
+      renderForm();
       return;
     }
     triggerKitCheck();
@@ -994,8 +994,6 @@ function initSidebar(currentPage) {
           // Auto-fill PI from Master Register only if staff left it blank
           if (!formState.cartonPi && res.pi) {
             formState.cartonPi = res.pi;
-            const piEl = document.getElementById('f-cartonPi');
-            if (piEl) piEl.value = formState.cartonPi;
           }
         } else if (res === null) {
           formState.cartonKitMatch = 'no-server';
@@ -1005,9 +1003,13 @@ function initSidebar(currentPage) {
       } catch(e) {
         formState.cartonKitMatch = 'no-server';
       }
-      setKitNoBadge(formState.cartonKitMatch);
-      updateSubmit();
-      renderParts();
+      // Full re-render: unlocking/locking affects the shared Inner/Outer
+      // barcode fields and the "Add" button, which live outside the
+      // parts-container and are only rebuilt by renderForm().
+      renderForm();
+      // Restore focus to the KIT No field so the badge/cursor stays put.
+      const kitEl = document.getElementById('f-cartonKit');
+      if (kitEl) { kitEl.focus(); const len = kitEl.value.length; kitEl.setSelectionRange(len, len); }
     }, 450);
   }
 
