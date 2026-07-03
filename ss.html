@@ -362,7 +362,7 @@ tr.clickable{cursor:pointer}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbz5FG38WP_QpYAr3xRkMAkwtUREUrlRG647GhdwtwpY_36doQxVjDIIMQbPuVS9aLlFzw/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbzGW-sIKLQ1kKO8Q3r4leMCZL27BjxPri-moh6yF9Vfg3hGkYch1OFj9C99ZA9fm9b1EQ/exec';
 
 let currentListId = null;
 let cameraCallback = null;
@@ -635,8 +635,14 @@ function initSidebar(currentPage) {
         formState.cartonId = first.cartonId || pe.cartonId || '';
         formState.cartonType = first.cartonType || 'single';
         formState.cartonPi = first.cartonPI || first.pi || '';
-        formState.cartonKit = first.cartonType === 'kit' ? (first.cartonPI || '') : '';
-        formState.cartonKitMatch = formState.cartonType === 'kit' && formState.cartonKit ? true : null;
+        if (formState.cartonType === 'kit') {
+          const kitFromParts = (first.parts && first.parts[0] && first.parts[0].kit) || first.cartonKit || '';
+          formState.cartonKit = kitFromParts;
+          formState.cartonKitMatch = formState.cartonKit ? true : null;
+        } else {
+          formState.cartonKit = '';
+          formState.cartonKitMatch = null;
+        }
         formState.cartonQty = first.cartonQty || first.qty || '1';
         if (first.cartonInner !== undefined) formState.cartonInner = first.cartonInner || '';
         if (first.cartonOuter !== undefined) formState.cartonOuter = first.cartonOuter || '';
@@ -752,6 +758,13 @@ function initSidebar(currentPage) {
         <div id="kit-level-fields" class="${formState.cartonType==='kit'?'':'hidden'}" style="margin-bottom:16px">
           <div class="grid-3">
             <div class="form-group">
+              <label class="form-label">PI No</label>
+              <div class="input-wrap">
+                <input type="text" id="f-cartonPi" placeholder="123456/26... (leave blank if none in Master Register)" value="${escHtml(formState.cartonPi)}" oninput="onCartonPiField(this.value)" />
+                <button type="button" class="btn-icon" onclick="openCamera('PI No',v=>{document.getElementById('f-cartonPi').value=v;onCartonPiField(v);})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+              </div>
+            </div>
+            <div class="form-group">
               <div style="display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:4px">
                 <span class="form-label">KIT No <span class="req">*</span></span>
                 <span id="match-badge-kitno" class="match-badge" style="display:none"></span>
@@ -766,7 +779,7 @@ function initSidebar(currentPage) {
               <input type="number" id="f-cartonQty" min="1" value="${formState.cartonQty}" oninput="formState.cartonQty=this.value" />
             </div>
           </div>
-          ${kitLocked ? '<div class="text-xs text-amber mt-8">Enter and verify the KIT No above before adding items.</div>' : ''}
+          ${kitLocked ? '<div class="text-xs text-amber mt-8">Enter the PI No (if any) and verify the KIT No above before adding items.</div>' : ''}
         </div>
 
         <div class="section-title">
@@ -945,6 +958,15 @@ function initSidebar(currentPage) {
   };
   window.onKitBarcode = function(which) { const el = document.getElementById('f-kit-' + which); if (!el) return; const val = el.value.trim().toUpperCase(); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] = val; el.value = val; if (!val) { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = null; setKitBadge(which, null); updateSubmit(); return; } if (val === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce['kit-' + which]); setKitBadge(which, 'checking'); lookupDebounce['kit-' + which] = setTimeout(() => doKitLookup(which, val), 450); };
 
+  window.onCartonPiField = function(val) {
+    const v = String(val || '').trim().toUpperCase();
+    formState.cartonPi = v;
+    const el = document.getElementById('f-cartonPi');
+    if (el) el.value = v;
+    // Changing the PI No re-validates the KIT No/PI combo if a KIT No is already entered
+    if (formState.cartonKit) triggerKitCheck();
+  };
+
   window.onKitNoField = function(val) {
     const v = String(val || '').trim().toUpperCase();
     formState.cartonKit = v;
@@ -952,34 +974,44 @@ function initSidebar(currentPage) {
     if (el) el.value = v;
     if (!v) {
       formState.cartonKitMatch = null;
-      formState.cartonPi = '';
       setKitNoBadge(null);
       updateSubmit();
-      renderParts();
+      renderForm();
       return;
     }
+    triggerKitCheck();
+  };
+
+  function triggerKitCheck() {
+    if (!formState.cartonKit) return;
     setKitNoBadge('checking');
     clearTimeout(lookupDebounce['kitno']);
     lookupDebounce['kitno'] = setTimeout(async () => {
       try {
-        const res = await gasGet({ action: 'lookupKit', kit: v });
+        const res = await gasGet({ action: 'lookupKit', kit: formState.cartonKit, pi: formState.cartonPi || '' });
         if (res && res.found) {
           formState.cartonKitMatch = true;
-          formState.cartonPi = res.pi || '';
+          // Auto-fill PI from Master Register only if staff left it blank
+          if (!formState.cartonPi && res.pi) {
+            formState.cartonPi = res.pi;
+          }
         } else if (res === null) {
           formState.cartonKitMatch = 'no-server';
         } else {
           formState.cartonKitMatch = false;
-          formState.cartonPi = '';
         }
       } catch(e) {
         formState.cartonKitMatch = 'no-server';
       }
-      setKitNoBadge(formState.cartonKitMatch);
-      updateSubmit();
-      renderParts();
+      // Full re-render: unlocking/locking affects the shared Inner/Outer
+      // barcode fields and the "Add" button, which live outside the
+      // parts-container and are only rebuilt by renderForm().
+      renderForm();
+      // Restore focus to the KIT No field so the badge/cursor stays put.
+      const kitEl = document.getElementById('f-cartonKit');
+      if (kitEl) { kitEl.focus(); const len = kitEl.value.length; kitEl.setSelectionRange(len, len); }
     }, 450);
-  };
+  }
 
   function setKitNoBadge(state) {
     const badge = document.getElementById('match-badge-kitno');
@@ -1200,7 +1232,7 @@ function initSidebar(currentPage) {
       cartonRef: cartonRef,
       cartonId: cartonId,
       cartonType: formState.cartonType,
-      cartonPI: isKit ? (formState.cartonKit || '') : (formState.cartonPi || (parts[0] && parts[0].pi) || ''),
+      cartonPI: formState.cartonPi || (parts[0] && parts[0].pi) || '',
       cartonQty: formState.cartonQty || (parts[0] && parts[0].qty) || '1',
       customer: staffSelectedList.customer,
       parts: parts,
