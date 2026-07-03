@@ -1109,7 +1109,18 @@ function initSidebar(currentPage) {
       const checks = isKit ? ['bag'] : ['bag', 'inner', 'outer'];
       checks.forEach(w => { const m = p[w + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; });
     });
-    if (isKit) { ['inner', 'outer'].forEach(w => { const m = formState['carton' + w.charAt(0).toUpperCase() + w.slice(1) + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; }); }
+    if (isKit) {
+  ['inner', 'outer'].forEach(w => {
+    const key = 'carton' + w.charAt(0).toUpperCase() + w.slice(1) + 'Match';
+    const m = formState[key];
+    
+    console.log(`Checking ${key}:`, m); // Debugging line
+
+    if (m === false) hasMismatch = true;
+    const done = m === true || m === 'no' || m === 'error' || m === 'no-server';
+    if (!done) allVerified = false;
+  });
+}
     if (mismatchWarn) mismatchWarn.classList.toggle('hidden', !hasMismatch);
     btn.disabled = hasMismatch || !allVerified;
   }
