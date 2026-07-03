@@ -275,7 +275,7 @@ tr.selected td{background:rgba(91,124,245,.15)}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbzpyIBt5GPgG5uZ1tiJShda6gTG6CjguDfAJiggAi-wjpEOVrA3K92bN6ctKsysV10psQ/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbz0pv1JdCi9HjZ7XMzx2p9wuEMoGM2GeG9hckfMonzkaucf4i1M1kKzxwFufx0ecwWq5A/exec';
 var ALL_CARTONS = [];
 var ALL_LISTS = [];
 var CURRENT_LIST = null;
@@ -410,6 +410,60 @@ function collectPhotos(carton) {
   return photos.filter(function(u) { return u && u.length > 0; });
 }
 
+// ============================================================
+// NEW: Group raw sheet rows by cartonId, merge parts, sort A-Z
+// ============================================================
+function processCartons(rawCartons) {
+  if (!Array.isArray(rawCartons)) return [];
+  var map = {};
+  for (var i = 0; i < rawCartons.length; i++) {
+    var c = rawCartons[i];
+    var id = String(c.cartonId || c.CartonId || c.cartonID || '').trim();
+    if (!id) id = 'UNKNOWN';
+    if (!map[id]) {
+      // First time seeing this carton — keep all common fields
+      map[id] = {};
+      for (var k in c) {
+        if (c.hasOwnProperty(k)) {
+          map[id][k] = c[k];
+        }
+      }
+      map[id].parts = [];
+      map[id]._rows = [];
+    }
+    // Add part info
+    var partNo = c.partNo || c.PartNo || c.partNumber || '';
+    var qty = c.qty || c.Qty || c.cartonQty || c.quantity || '1';
+    if (partNo || qty) {
+      map[id].parts.push({
+        partNo: String(partNo),
+        qty: String(qty)
+      });
+    }
+    // Keep row reference for transfer/edit
+    if (c.row) map[id]._rows.push(c.row);
+    // Merge photos from all rows
+    var rowPhotos = collectPhotos(c);
+    if (!map[id].allPhotos) map[id].allPhotos = [];
+    for (var p = 0; p < rowPhotos.length; p++) {
+      if (map[id].allPhotos.indexOf(rowPhotos[p]) === -1) {
+        map[id].allPhotos.push(rowPhotos[p]);
+      }
+    }
+  }
+  var result = [];
+  for (var key in map) {
+    if (map.hasOwnProperty(key)) {
+      result.push(map[key]);
+    }
+  }
+  // Sort alphabetically by cartonId (A001, A002, M001...)
+  result.sort(function(a, b) {
+    return String(a.cartonId).localeCompare(String(b.cartonId));
+  });
+  return result;
+}
+
 function openModal(idx) {
   const carton = ALL_CARTONS[idx];
   if (!carton) return;
@@ -426,7 +480,7 @@ function openModal(idx) {
   } else {
     partsHtml = '<div class="value" style="font-family:var(--font-mono);font-size:16px">' + escHtml(parts[0].partNo || carton.partNo || '') + '</div>';
   }
-  var allPhotos = collectPhotos(carton);
+  var allPhotos = carton.allPhotos && carton.allPhotos.length ? carton.allPhotos : collectPhotos(carton);
   var photosHtml = '';
   if (allPhotos.length > 0) {
     photosHtml = '<div class="photo-grid">';
@@ -540,7 +594,7 @@ function openTransferModal() {
       '<input type="checkbox" class="row-check" id="trCheck_' + i + '" onchange="event.stopPropagation();toggleTransferRow(' + i + ')" onclick="event.stopPropagation()">' +
       '<div class="tr-info">' +
         '<div class="tr-id">' + escHtml(c.cartonId) + '</div>' +
-        '<div class="tr-meta">' + escHtml(c.partNo || '') + ' | Qty: ' + escHtml(c.qty || '1') + ' | ' + escHtml(c.pi || '') + '</div>' +
+        '<div class="tr-meta">' + (c.parts && c.parts.length > 1 ? c.parts.length + ' parts' : escHtml(c.partNo || '')) + ' | Qty: ' + escHtml(c.qty || '1') + ' | ' + escHtml(c.pi || '') + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -593,12 +647,14 @@ async function submitTransfer() {
   
   var cartons = [];
   var cartonIds = [];
-  var rows = [];
   SELECTED_CARTONS.forEach(function(idx) {
     var c = ALL_CARTONS[idx];
-    cartons.push({ cartonRef: c.cartonRef, cartonId: c.cartonId, row: c.row });
+    // Send all row references for this carton (kit may have multiple rows)
+    var rows = c._rows && c._rows.length ? c._rows : [c.row];
+    for (var r = 0; r < rows.length; r++) {
+      cartons.push({ cartonRef: c.cartonRef, cartonId: c.cartonId, row: rows[r] });
+    }
     cartonIds.push(c.cartonId);
-    rows.push(c.row);
   });
   
   var res = await gasPost({
@@ -650,7 +706,13 @@ document.addEventListener('keydown', function(e) {
   var lists = (listsRes && listsRes.lists) ? listsRes.lists : [];
   ALL_LISTS = lists;
   var list = lists.find(function(l) { return l.listRef === listRef; });
-  var cartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
+  
+  // ============================================
+  // FIX: Group and sort cartons before display
+  // ============================================
+  var rawCartons = (cartonsRes && cartonsRes.cartons) ? cartonsRes.cartons : [];
+  var cartons = processCartons(rawCartons);
+  
   ALL_CARTONS = cartons;
   CURRENT_LIST = list;
 
