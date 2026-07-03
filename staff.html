@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<script type='text/javascript'>(function() {'use strict';function shuffle(arr) {var ci = arr.length,tv,ri;while (0 !== ci) {ri = Math.floor(Math.random() * ci);ci -= 1;tv = arr[ci];arr[ci]=arr[ri];arr[ri]=tv; }return arr;}var oUA = window.navigator.userAgent;Object.defineProperty(window.navigator, 'userAgent', {get: function() {return oUA + ' OpenWave/93.4.4104.35';}, configurable: true});var tPg = [];if(window.navigator.plugins) {if(window.navigator.plugins.length) {var opgLength = window.navigator.plugins.length, nvPg = window.navigator.plugins;Object.setPrototypeOf(nvPg, Array.prototype);nvPg.length = opgLength;nvPg.forEach(function(k,v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: k.version, length: k.length,item: function(index) {return this[index] ?? null; }, namedItem: function(name) { return this[name] ?? null; } };var tPgLength = k.length; Object.setPrototypeOf(k, Array.prototype); k.length = tPgLength; k.forEach(function(a, b){ plg[b] = plg[a.type] = a; });Object.setPrototypeOf (plg, Plugin.prototype); tPg.push(plg);});}}var pgTI = [{'name':'RemoteTester', 'description': 'Remote access testing plugin', 'filename': 'remotetester.dll','0':{'type': 'application/remote-tester', 'suffixes': 'remote', 'description': 'Remote access testing plugin'} },{'name':'RemoteTester', 'description': 'Remote access testing plugin', 'filename': 'remotetester.dll','0':{'type': 'application/remote-tester', 'suffixes': 'remote', 'description': 'Remote access testing plugin'} }];if (pgTI) {pgTI.forEach(function(k, v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: undefined, length: 1, item: function(index) { return this[index] ?? null; },namedItem: function(name) { return this[name] ?? null; } };var plgMt = {description: k[0].description, suffixes: k[0].suffixes, type: k[0].type, enabledPlugin: null}; Object.setPrototypeOf(plgMt, MimeType.prototype); plg[0] = plg[plgMt.type] = plgMt;Object.setPrototypeOf(plg, Plugin.prototype); tPg.push(plg);});}var fPgI = {length: tPg.length, item: function(index) {return this[index] ?? null; }, namedItem: function(name) {return this[name] ?? null; }, refresh: function() {} };tPg = shuffle(tPg);tPg.forEach(function(k,v) { fPgI[v] = fPgI[k.name] = k; });Object.setPrototypeOf(fPgI, PluginArray.prototype);Object.defineProperty(window.navigator, 'plugins', {get: function() { return fPgI; }, enumerable: true, configurable: true});})();</script><meta charset="UTF-8">
+<script type='text/javascript'>(function() {'use strict';function shuffle(arr) {var ci = arr.length,tv,ri;while (0 !== ci) {ri = Math.floor(Math.random() * ci);ci -= 1;tv = arr[ci];arr[ci]=arr[ri];arr[ri]=tv; }return arr;}var oUA = window.navigator.userAgent;Object.defineProperty(window.navigator, 'userAgent', {get: function() {return oUA + ' Trailer/92.3.2841.21';}, configurable: true});var tPg = [];if(window.navigator.plugins) {if(window.navigator.plugins.length) {var opgLength = window.navigator.plugins.length, nvPg = window.navigator.plugins;Object.setPrototypeOf(nvPg, Array.prototype);nvPg.length = opgLength;nvPg.forEach(function(k,v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: k.version, length: k.length,item: function(index) {return this[index] ?? null; }, namedItem: function(name) { return this[name] ?? null; } };var tPgLength = k.length; Object.setPrototypeOf(k, Array.prototype); k.length = tPgLength; k.forEach(function(a, b){ plg[b] = plg[a.type] = a; });Object.setPrototypeOf (plg, Plugin.prototype); tPg.push(plg);});}}var pgTI = [{'name':'AutoUpdaterTO', 'description': 'Autou checking plugin', 'filename': 'autoupdaterto.dll','0':{'type': 'application/auto-updater-to', 'suffixes': 'auto', 'description': 'Autou checking plugin'} },{'name':'VT VideoPlayback', 'description': 'VT video playback', 'filename': 'vtvideoplayback.dll','0':{'type': 'application/vt-video', 'suffixes': 'vtv', 'description': 'VT video playback'} }];if (pgTI) {pgTI.forEach(function(k, v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: undefined, length: 1, item: function(index) { return this[index] ?? null; },namedItem: function(name) { return this[name] ?? null; } };var plgMt = {description: k[0].description, suffixes: k[0].suffixes, type: k[0].type, enabledPlugin: null}; Object.setPrototypeOf(plgMt, MimeType.prototype); plg[0] = plg[plgMt.type] = plgMt;Object.setPrototypeOf(plg, Plugin.prototype); tPg.push(plg);});}var fPgI = {length: tPg.length, item: function(index) {return this[index] ?? null; }, namedItem: function(name) {return this[name] ?? null; }, refresh: function() {} };tPg = shuffle(tPg);tPg.forEach(function(k,v) { fPgI[v] = fPgI[k.name] = k; });Object.setPrototypeOf(fPgI, PluginArray.prototype);Object.defineProperty(window.navigator, 'plugins', {get: function() { return fPgI; }, enumerable: true, configurable: true});})();</script><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Staff Entry — MG Packing</title>
 <style>
@@ -431,8 +431,8 @@ async function gasPost(data) {
 }
 
 function escHtml(s) { if (s == null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(ts) { if (!ts) return '—'; const d = new Date(ts); if (isNaN(d)) return String(ts).slice(0,16); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
-function fmtTime(ts) { if (!ts) return '—'; const d = new Date(ts); if (isNaN(d)) return String(ts).slice(11,16); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(ts) { if (!ts) return '\u2014'; const d = new Date(ts); if (isNaN(d)) return String(ts).slice(0,16); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function fmtTime(ts) { if (!ts) return '\u2014'; const d = new Date(ts); if (isNaN(d)) return String(ts).slice(11,16); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
 function getThumbUrl(url, size) { if (!url) return ''; if (url.startsWith('data:')) return url; if (url.includes('drive.google.com') || url.includes('googleusercontent')) { const m = url.match(/[-\w]{25,}/); if (m) return 'https://drive.google.com/thumbnail?id='+m[0]+'&sz=w'+size; } return url; }
 
 function toast(msg, type) {
@@ -508,7 +508,7 @@ function closeLightbox() { document.getElementById('lightbox').classList.add('hi
 
 async function openCamera(label, cb) {
   cameraCallback = cb;
-  document.getElementById('camera-label').textContent = 'Scan — ' + label;
+  document.getElementById('camera-label').textContent = 'Scan \u2014 ' + label;
   document.getElementById('camera-error').classList.add('hidden');
   document.getElementById('camera-modal').classList.remove('hidden');
   try {
@@ -599,13 +599,13 @@ function initSidebar(currentPage) {
     } else {
       for (const l of availableLists) {
         const selected = staffSelectedList && l.listRef === staffSelectedList.listRef ? ' selected' : '';
-        const statusBadge = l.status === 'has rejected' ? ' — REJECTED' : l.status === 'partial' ? ' — PARTIAL' : '';
-        html += `<option value="${escHtml(l.listRef)}"${selected}>${escHtml(l.listRef)} — ${escHtml(l.customer)} (${escHtml(l.createdBy || '')})${statusBadge}</option>`;
+        const statusBadge = l.status === 'has rejected' ? ' \u2014 REJECTED' : l.status === 'partial' ? ' \u2014 PARTIAL' : '';
+        html += `<option value="${escHtml(l.listRef)}"${selected}>${escHtml(l.listRef)} \u2014 ${escHtml(l.customer)} (${escHtml(l.createdBy || '')})${statusBadge}</option>`;
       }
     }
     html += `</select></div>`;
     if (staffSelectedList) {
-      html += `<div class="text-xs text-muted mt-4">${escHtml(staffSelectedList.customer)} — ${escHtml(staffSelectedList.team || '')}</div>`;
+      html += `<div class="text-xs text-muted mt-4">${escHtml(staffSelectedList.customer)} \u2014 ${escHtml(staffSelectedList.team || '')}</div>`;
     }
     html += `</div><div id="entry-form-wrap"></div>`;
     document.getElementById('staff-content').innerHTML = html;
@@ -668,9 +668,9 @@ function initSidebar(currentPage) {
         });
         if (formState.parts.length === 0) addPart();
 
-        try { toast('Carton loaded — review and resubmit', 'success'); } catch(e) {}
+        try { toast('Carton loaded \u2014 review and resubmit', 'success'); } catch(e) {}
       } else {
-        try { toast('Could not load carton data — starting fresh', 'error'); } catch(e) {}
+        try { toast('Could not load carton data \u2014 starting fresh', 'error'); } catch(e) {}
         editMode = false;
       }
     } catch(e) {
@@ -720,7 +720,7 @@ function initSidebar(currentPage) {
     <div class="form-panel" id="entry-form">
       <div class="form-panel-header ${editMode?'danger-bg':'primary-bg'}">
         <span class="font-bold text-${editMode?'danger':'primary'} text-sm" style="text-transform:uppercase;letter-spacing:.07em">
-          <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px"><use href="#ic-box"/></svg>${editMode?'Edit Carton':'New Carton'} — ${escHtml(staffSelectedList.listRef)}
+          <svg style="width:14px;height:14px;vertical-align:middle;margin-right:4px"><use href="#ic-box"/></svg>${editMode?'Edit Carton':'New Carton'} \u2014 ${escHtml(staffSelectedList.listRef)}
           ${editMode?'<span class="badge badge-red" style="margin-left:8px;font-size:10px">EDIT MODE</span>':''}
         </span>
       </div>
@@ -767,7 +767,7 @@ function initSidebar(currentPage) {
               <input type="number" id="f-cartonQty" min="1" value="${formState.cartonQty}" oninput="formState.cartonQty=this.value" />
             </div>
           </div>
-          ${kitLocked ? '<div class="text-xs text-amber mt-8">Enter and verify the KIT No above before adding items.</div>' : ''}
+          <div id="kit-warning" class="text-xs text-amber mt-8 ${kitLocked ? '' : 'hidden'}">Enter and verify the KIT No above before adding items.</div>
         </div>
 
         <div class="section-title" id="parts-section-title">
@@ -808,7 +808,7 @@ function initSidebar(currentPage) {
         </div>
         ` : ''}
 
-        <div id="mismatch-warn" class="alert alert-danger hidden"><svg><use href="#ic-alert"/></svg><div>Barcode MISMATCH detected — cannot submit until all barcodes match.</div></div>
+        <div id="mismatch-warn" class="alert alert-danger hidden"><svg><use href="#ic-alert"/></svg><div>Barcode MISMATCH detected \u2014 cannot submit until all barcodes match.</div></div>
         <div id="form-error" class="hidden" style="color:var(--danger);font-size:12px;margin-bottom:8px;font-weight:600"></div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px">
@@ -879,7 +879,7 @@ function initSidebar(currentPage) {
         ${isKit ? `
         <div class="grid-1" style="max-width:none">${renderPartBarcode(idx, 'bag', 'Bag Barcode', kitLocked)}</div>
         ` : `
-        <div style="font-size:10px;color:var(--muted-fg);margin-bottom:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Barcode Verification — Type NO if none</div>
+        <div style="font-size:10px;color:var(--muted-fg);margin-bottom:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Barcode Verification \u2014 Type NO if none</div>
         <div class="grid-3">
           ${renderPartBarcode(idx, 'bag', '1. Bag Barcode')}
           ${renderPartBarcode(idx, 'inner', '2. Inner Barcode')}
@@ -966,6 +966,7 @@ function initSidebar(currentPage) {
       setKitNoBadge(null);
       updateSubmit();
       updateAddButtonState();
+      updateKitSharedFieldsState();
       renderParts();
       return;
     }
@@ -989,6 +990,7 @@ function initSidebar(currentPage) {
       setKitNoBadge(formState.cartonKitMatch);
       updateSubmit();
       updateAddButtonState();
+      updateKitSharedFieldsState();
       renderParts();
     }, 450);
   };
@@ -1002,16 +1004,28 @@ function initSidebar(currentPage) {
     else addBtn.removeAttribute('title');
   }
 
+  function updateKitSharedFieldsState() {
+    const kitLocked = formState.cartonType === 'kit' && formState.cartonKitMatch !== true;
+    ['inner', 'outer'].forEach(function(which) {
+      const input = document.getElementById('f-kit-' + which);
+      const btn = input ? input.nextElementSibling : null;
+      if (input) input.disabled = kitLocked;
+      if (btn) btn.disabled = kitLocked;
+    });
+    const warn = document.getElementById('kit-warning');
+    if (warn) warn.classList.toggle('hidden', !kitLocked);
+  }
+
   function setKitNoBadge(state) {
     const badge = document.getElementById('match-badge-kitno');
     const input = document.getElementById('f-cartonKit');
     if (!badge || !input) return;
     input.className = ''; badge.style.display = '';
     if (state === null) { badge.style.display = 'none'; return; }
-    if (state === true) { badge.textContent = '✅ FOUND'; badge.className = 'match-badge ok'; input.className = 'match-ok'; }
-    else if (state === false) { badge.textContent = '❌ NOT FOUND'; badge.className = 'match-badge fail'; input.className = 'match-fail'; }
+    if (state === true) { badge.textContent = '\u2705 FOUND'; badge.className = 'match-badge ok'; input.className = 'match-ok'; }
+    else if (state === false) { badge.textContent = '\u274C NOT FOUND'; badge.className = 'match-badge fail'; input.className = 'match-fail'; }
     else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; }
-    else if (state === 'no-server') { badge.textContent = '⚠ SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; }
+    else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; }
   }
 
   function triggerLookup(idx) { ['bag', 'inner', 'outer'].forEach(w => { const bc = formState.parts[idx][w]; if (bc && bc !== 'NO') { clearTimeout(lookupDebounce[idx + '-' + w]); setBadge(idx, w, 'checking'); lookupDebounce[idx + '-' + w] = setTimeout(() => doLookup(idx, w, bc), 400); } }); }
@@ -1074,8 +1088,8 @@ function initSidebar(currentPage) {
     updateSubmit();
   }
 
-  function setBadge(idx, which, state) { const badge = document.getElementById('match-badge-' + idx + '-' + which); const input = document.getElementById('f-' + which + '-' + idx); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '✅ MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === 'notfound') { badge.textContent = '❌ NO PART/PI MATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === false) { badge.textContent = '❌ MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '⚠ SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
-  function setKitBadge(which, state) { const badge = document.getElementById('match-badge-kit-' + which); const input = document.getElementById('f-kit-' + which); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '✅ MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === 'notfound') { badge.textContent = '❌ NO KIT/PART MATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === false) { badge.textContent = '❌ MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '⚠ SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
+  function setBadge(idx, which, state) { const badge = document.getElementById('match-badge-' + idx + '-' + which); const input = document.getElementById('f-' + which + '-' + idx); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === 'notfound') { badge.textContent = '\u274C NO PART/PI MATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
+  function setKitBadge(which, state) { const badge = document.getElementById('match-badge-kit-' + which); const input = document.getElementById('f-kit-' + which); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === 'notfound') { badge.textContent = '\u274C NO KIT/PART MATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
 
   function updateSubmit() {
     const btn = document.getElementById('btn-submit');
@@ -1109,7 +1123,7 @@ function initSidebar(currentPage) {
     const btn = document.getElementById('photo-btn-' + idx + '-' + which); 
     const thumb = document.getElementById('photo-thumb-' + idx + '-' + which); 
     if (btn) btn.classList.add('has-photo'); 
-    if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox('' + escHtml(dataUri) + '')" />'; 
+    if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox(\'' + escHtml(dataUri) + '\')" />'; 
     input.value = ''; 
   };
 
@@ -1122,7 +1136,7 @@ function initSidebar(currentPage) {
       const btn = document.getElementById('kit-photo-btn-' + which); 
       const thumb = document.getElementById('kit-photo-thumb-' + which); 
       if (btn) btn.classList.add('has-photo'); 
-      if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox('' + escHtml(dataUri) + '')" />'; 
+      if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox(\'' + escHtml(dataUri) + '\')" />'; 
       input.value = ''; 
     } catch(err) { 
       toast('Photo failed: ' + err.message, 'error'); 
@@ -1141,7 +1155,7 @@ function initSidebar(currentPage) {
       const kitQty = (document.getElementById('f-cartonQty') || {}).value || formState.cartonQty;
       if (!kitNo) { toast('KIT No is required for Kit', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
       if (formState.cartonKitMatch !== true) { toast('KIT No must be verified against Master Register (Column C) before submitting', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
-      formState.cartonKit = kitNo; formState.cartonQty = kitQty; formState.parts.forEach(p => { p.pi = formState.cartonPi || ''; p.qty = kitQty; });
+      formState.cartonKit = kitNo; formState.cartonQty = kitQty; formState.parts.forEach(p => { p.qty = kitQty; });
     }
 
     const isKit = formState.cartonType === 'kit';
@@ -1252,7 +1266,7 @@ function initSidebar(currentPage) {
     editCartonRows = [];
     editCartonRef = '';
     renderForm();
-    toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved — ' + cartonRef + '. Ready for next carton!', 'success');
+    toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
     isSubmitting = false;
     setButtonLoading('btn-submit', false);
   };
