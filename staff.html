@@ -362,7 +362,7 @@ tr.clickable{cursor:pointer}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbxnStvLWtGvmk22EMZP3VSOzMxd6X4hWl-qZeOvT-kUJhKwcxQaPgk01M-lVAR5FF7qDQ/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbx7I01etUUNw0gDREth7-G1xYuTmwOFtZym70afxnCrNTiow4YTdI8jxnKY5foE5cPZPw/exec';
 
 let currentListId = null;
 let cameraCallback = null;
@@ -694,9 +694,11 @@ function initSidebar(currentPage) {
 
   function addPart() {
     const idx = formState.parts.length;
+    /* CHANGE START */
     if (formState.cartonType === 'kit') {
-      formState.parts.push({ partNo: '', bag: '', bagMatch: null });
+      formState.parts.push({ partNo: '', pi: '', bag: '', bagMatch: null });
     } else {
+    /* CHANGE END */
       formState.parts.push({ partNo: '', pi: '', qty: '1', bag: '', inner: '', outer: '', bagMatch: null, innerMatch: null, outerMatch: null, photos: { bag: null, inner: null, outer: null } });
     }
     return idx;
@@ -858,13 +860,24 @@ function initSidebar(currentPage) {
           <input type="number" id="f-qty-${idx}" min="1" value="${part.qty}" oninput="onPartField(${idx},'qty')" />
         </div>
         ` : `
-        <div class="form-group" style="margin-bottom:12px;max-width:none">
-          <label class="form-label">Part No <span class="req">*</span></label>
-          <div class="input-wrap">
-            <input type="text" id="f-partNo-${idx}" placeholder="Scan or type..." value="${escHtml(part.partNo)}" ${kitLocked?'disabled':''} oninput="onPartField(${idx},'partNo')" />
-            <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('Part ${idx+1} No',v=>{document.getElementById('f-partNo-${idx}').value=v;onPartField(${idx},'partNo');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
+        /* CHANGE START */
+        <div class="grid-2" style="margin-bottom:12px">
+          <div class="form-group">
+            <label class="form-label">Part No <span class="req">*</span></label>
+            <div class="input-wrap">
+              <input type="text" id="f-partNo-${idx}" placeholder="Scan or type..." value="${escHtml(part.partNo)}" ${kitLocked?'disabled':''} oninput="onPartField(${idx},'partNo')" />
+              <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('Part ${idx+1} No',v=>{document.getElementById('f-partNo-${idx}').value=v;onPartField(${idx},'partNo');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">P/I No</label>
+            <div class="input-wrap">
+              <input type="text" id="f-pi-${idx}" placeholder="123456/26..." value="${escHtml(part.pi || '')}" ${kitLocked?'disabled':''} oninput="onPartField(${idx},'pi')" />
+              <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('PI No',v=>{document.getElementById('f-pi-${idx}').value=v;onPartField(${idx},'pi');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
+            </div>
           </div>
         </div>
+        /* CHANGE END */
         `}
         ${isKit ? `
         <div class="grid-1" style="max-width:none">${renderPartBarcode(idx, 'bag', 'Bag Barcode', kitLocked)}</div>
@@ -1188,7 +1201,9 @@ function initSidebar(currentPage) {
     if (isKit) {
       const kitNo = (formState.cartonKit || '').toUpperCase();
       const kitQty = parseInt(formState.cartonQty) || 1;
-      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (formState.cartonPi || '').toUpperCase(), kit: kitNo, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
+      /* CHANGE START */
+      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || formState.cartonPi || '').toUpperCase(), kit: kitNo, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
+      /* CHANGE END */
     } else {
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch), photos: p.photos || { bag: '', inner: '', outer: '' } }));
     }
