@@ -248,7 +248,6 @@ tr.clickable{cursor:pointer}
 .password-gate-sub{font-size:13px;color:var(--muted-fg);margin-bottom:24px;line-height:1.6}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--muted-fg)}
 </style>
-<base target="_blank">
 </head>
 <body>
 
@@ -468,7 +467,7 @@ function compressImage(file, maxPx, q) {
       let w = img.width, h = img.height;
       if (w > h && w > maxPx) { h = Math.round(h * maxPx / w); w = maxPx; }
       else if (h > maxPx) { w = Math.round(w * maxPx / h); h = maxPx; }
-
+      
       const tryCompress = (quality, scale) => {
         const cw = Math.round(w * scale);
         const ch = Math.round(h * scale);
@@ -481,7 +480,7 @@ function compressImage(file, maxPx, q) {
         const dataUrl = c.toDataURL('image/jpeg', quality);
         const sizeBytes = Math.round(dataUrl.length * 0.75);
         const targetBytes = 58000;
-
+        
         if (sizeBytes <= targetBytes || (quality <= 0.25 && scale <= 0.4)) {
           res(dataUrl);
         } else if (quality > 0.25) {
@@ -490,7 +489,7 @@ function compressImage(file, maxPx, q) {
           setTimeout(() => tryCompress(0.6, Math.max(0.4, scale - 0.15)), 0);
         }
       };
-
+      
       tryCompress(q, 1.0);
     };
     img.onerror = rej;
@@ -551,7 +550,7 @@ function initSidebar(currentPage) {
   initSidebar('staff');
 
   let staffSelectedList = null;
-  let formState = { cartonId: '', cartonType: 'single', cartonPi: '', cartonKit: '', cartonKitMatch: null, cartonQty: '1', cartonInner: '', cartonOuter: '', cartonInnerMatch: null, cartonOuterMatch: null, cartonPhotos: { allParts: null, innerBox: null, cartonLabel: null }, parts: [], uploading: false };
+  let formState = { cartonId: '', cartonType: 'single', cartonPi: '', cartonQty: '1', cartonInner: '', cartonOuter: '', cartonInnerMatch: null, cartonOuterMatch: null, cartonPhotos: { allParts: null, innerBox: null, cartonLabel: null }, parts: [], uploading: false };
   let lookupCache = {};
   const lookupDebounce = {};
   let isSubmitting = false;
@@ -574,7 +573,7 @@ function initSidebar(currentPage) {
       }
     }
     if (!lists) lists = [];
-
+    
     const availableLists = lists.filter(l => l.status !== 'completed');
     staffSelectedList = availableLists.length > 0 ? availableLists[0] : null;
 
@@ -629,15 +628,13 @@ function initSidebar(currentPage) {
     try {
       const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
       if (res && res.cartons && res.cartons.length > 0) {
-        const rows = res.cartons;
+        const rows = res.cartons; // one row per part now
         editCartonRows = rows.map(c => c.row).filter(Boolean);
         const first = rows[0];
         editCartonRef = first.cartonRef || '';
         formState.cartonId = first.cartonId || pe.cartonId || '';
         formState.cartonType = first.cartonType || 'single';
         formState.cartonPi = first.cartonPI || first.pi || '';
-        formState.cartonKit = first.cartonType === 'kit' ? (first.cartonPI || '') : '';
-        formState.cartonKitMatch = formState.cartonType === 'kit' && formState.cartonKit ? true : null;
         formState.cartonQty = first.cartonQty || first.qty || '1';
         if (first.cartonInner !== undefined) formState.cartonInner = first.cartonInner || '';
         if (first.cartonOuter !== undefined) formState.cartonOuter = first.cartonOuter || '';
@@ -688,7 +685,7 @@ function initSidebar(currentPage) {
   };
 
   function resetForm() {
-    formState = { cartonId: '', cartonType: 'single', cartonPi: '', cartonKit: '', cartonKitMatch: null, cartonQty: '1', cartonInner: '', cartonOuter: '', cartonInnerMatch: null, cartonOuterMatch: null, cartonPhotos: { allParts: null, innerBox: null, cartonLabel: null }, parts: [], uploading: false };
+    formState = { cartonId: '', cartonType: 'single', cartonPi: '', cartonQty: '1', cartonInner: '', cartonOuter: '', cartonInnerMatch: null, cartonOuterMatch: null, cartonPhotos: { allParts: null, innerBox: null, cartonLabel: null }, parts: [], uploading: false };
     lookupCache = {};
     addPart();
   }
@@ -696,7 +693,7 @@ function initSidebar(currentPage) {
   function addPart() {
     const idx = formState.parts.length;
     if (formState.cartonType === 'kit') {
-      formState.parts.push({ partNo: '', pi: '', bag: '', bagMatch: null });
+      formState.parts.push({ partNo: '', bag: '', bagMatch: null });
     } else {
       formState.parts.push({ partNo: '', pi: '', qty: '1', bag: '', inner: '', outer: '', bagMatch: null, innerMatch: null, outerMatch: null, photos: { bag: null, inner: null, outer: null } });
     }
@@ -714,7 +711,6 @@ function initSidebar(currentPage) {
     const wrap = document.getElementById('entry-form-wrap');
     if (!staffSelectedList) return;
     if (formState.parts.length === 0) addPart();
-    const kitLocked = formState.cartonType === 'kit' && formState.cartonKitMatch !== true;
 
     wrap.innerHTML = `
     <div class="form-panel" id="entry-form">
@@ -753,26 +749,22 @@ function initSidebar(currentPage) {
         <div id="kit-level-fields" class="${formState.cartonType==='kit'?'':'hidden'}" style="margin-bottom:16px">
           <div class="grid-3">
             <div class="form-group">
-              <div style="display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:4px">
-                <span class="form-label">KIT No <span class="req">*</span></span>
-                <span id="match-badge-kitno" class="match-badge" style="display:none"></span>
-              </div>
+              <label class="form-label">PI No <span class="req">*</span></label>
               <div class="input-wrap">
-                <input type="text" id="f-cartonKit" placeholder="e.g. 11K1134X2..." value="${escHtml(formState.cartonKit)}" oninput="onKitNoField(this.value)" />
-                <button type="button" class="btn-icon" onclick="openCamera('KIT No',v=>{document.getElementById('f-cartonKit').value=v;onKitNoField(v);})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+                <input type="text" id="f-cartonPi" placeholder="123456/26..." value="${escHtml(formState.cartonPi)}" oninput="formState.cartonPi=this.value.trim().toUpperCase();this.value=formState.cartonPi;syncKit()" />
+                <button type="button" class="btn-icon" onclick="openCamera('PI No',v=>{document.getElementById('f-cartonPi').value=v;formState.cartonPi=v.trim().toUpperCase();syncKit();})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Qty (pcs) <span class="req">*</span></label>
-              <input type="number" id="f-cartonQty" min="1" value="${formState.cartonQty}" oninput="formState.cartonQty=this.value" />
+              <input type="number" id="f-cartonQty" min="1" value="${formState.cartonQty}" oninput="formState.cartonQty=this.value;syncKit()" />
             </div>
           </div>
-          <div id="kit-warning" class="text-xs text-amber mt-8 ${kitLocked ? '' : 'hidden'}">Enter and verify the KIT No above before adding items.</div>
         </div>
 
-        <div class="section-title" id="parts-section-title">
+        <div class="section-title">
           ${formState.cartonType==='single'?'Item Details':formState.cartonType==='kit'?'Items in this Kit':'Parts in this Carton'}
-          ${formState.cartonType !== 'single' ? `<span style="float:right"><button class="btn btn-primary btn-xs" id="btn-add-part" onclick="addNewPart()" ${kitLocked ? 'disabled title="Verify KIT No first"' : ''}><svg><use href="#ic-plus"/></svg>Add</button></span>` : ''}
+          ${formState.cartonType !== 'single' ? '<span style="float:right"><button class="btn btn-primary btn-xs" onclick="addNewPart()"><svg><use href="#ic-plus"/></svg>Add</button></span>' : ''}
         </div>
         <div id="parts-container"></div>
 
@@ -785,8 +777,8 @@ function initSidebar(currentPage) {
               <span id="match-badge-kit-inner" class="match-badge" style="display:none"></span>
             </div>
             <div class="input-wrap">
-              <input type="text" id="f-kit-inner" placeholder="Scan or type... (NO if none)" value="${escHtml(formState.cartonInner)}" ${kitLocked?'disabled':''} oninput="onKitBarcode('inner')" />
-              <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('Inner Box',v=>{document.getElementById('f-kit-inner').value=v;onKitBarcode('inner');})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+              <input type="text" id="f-kit-inner" placeholder="Scan or type... (NO if none)" value="${escHtml(formState.cartonInner)}" oninput="onKitBarcode('inner')" />
+              <button type="button" class="btn-icon" onclick="openCamera('Inner Box',v=>{document.getElementById('f-kit-inner').value=v;onKitBarcode('inner');})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
             </div>
           </div>
           <div class="form-group">
@@ -795,8 +787,8 @@ function initSidebar(currentPage) {
               <span id="match-badge-kit-outer" class="match-badge" style="display:none"></span>
             </div>
             <div class="input-wrap">
-              <input type="text" id="f-kit-outer" placeholder="Scan or type... (NO if none)" value="${escHtml(formState.cartonOuter)}" ${kitLocked?'disabled':''} oninput="onKitBarcode('outer')" />
-              <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('Outer Carton',v=>{document.getElementById('f-kit-outer').value=v;onKitBarcode('outer');})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+              <input type="text" id="f-kit-outer" placeholder="Scan or type... (NO if none)" value="${escHtml(formState.cartonOuter)}" oninput="onKitBarcode('outer')" />
+              <button type="button" class="btn-icon" onclick="openCamera('Outer Carton',v=>{document.getElementById('f-kit-outer').value=v;onKitBarcode('outer');})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
             </div>
           </div>
         </div>
@@ -830,7 +822,6 @@ function initSidebar(currentPage) {
     const container = document.getElementById('parts-container');
     if (!container) return;
     const isKit = formState.cartonType === 'kit';
-    const kitLocked = isKit && formState.cartonKitMatch !== true;
     container.innerHTML = formState.parts.map((part, idx) => `
       <div class="part-card" id="part-card-${idx}">
         <div class="part-card-header">
@@ -849,7 +840,7 @@ function initSidebar(currentPage) {
           <div class="form-group">
             <label class="form-label">PI No</label>
             <div class="input-wrap">
-              <input type="text" id="f-pi-${idx}" placeholder="123456/26... (leave blank if none in Master Register)" value="${escHtml(part.pi)}" oninput="onPartField(${idx},'pi')" />
+              <input type="text" id="f-pi-${idx}" placeholder="123456/26..." value="${escHtml(part.pi)}" oninput="onPartField(${idx},'pi')" />
               <button type="button" class="btn-icon" onclick="openCamera('PI No',v=>{document.getElementById('f-pi-${idx}').value=v;onPartField(${idx},'pi');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
             </div>
           </div>
@@ -859,25 +850,16 @@ function initSidebar(currentPage) {
           <input type="number" id="f-qty-${idx}" min="1" value="${part.qty}" oninput="onPartField(${idx},'qty')" />
         </div>
         ` : `
-        <div class="grid-2" style="margin-bottom:12px">
-          <div class="form-group">
-            <label class="form-label">Part No <span class="req">*</span></label>
-            <div class="input-wrap">
-              <input type="text" id="f-partNo-${idx}" placeholder="Scan or type..." value="${escHtml(part.partNo)}" ${kitLocked?'disabled':''} oninput="onPartField(${idx},'partNo')" />
-              <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('Part ${idx+1} No',v=>{document.getElementById('f-partNo-${idx}').value=v;onPartField(${idx},'partNo');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">P/I No</label>
-            <div class="input-wrap">
-              <input type="text" id="f-pi-${idx}" placeholder="123456/26..." value="${escHtml(part.pi || '')}" ${kitLocked?'disabled':''} oninput="onPartField(${idx},'pi')" />
-              <button type="button" class="btn-icon" ${kitLocked?'disabled':''} onclick="openCamera('PI No',v=>{document.getElementById('f-pi-${idx}').value=v;onPartField(${idx},'pi');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
-            </div>
+        <div class="form-group" style="margin-bottom:12px;max-width:none">
+          <label class="form-label">Part No <span class="req">*</span></label>
+          <div class="input-wrap">
+            <input type="text" id="f-partNo-${idx}" placeholder="Scan or type..." value="${escHtml(part.partNo)}" oninput="onPartField(${idx},'partNo')" />
+            <button type="button" class="btn-icon" onclick="openCamera('Part ${idx+1} No',v=>{document.getElementById('f-partNo-${idx}').value=v;onPartField(${idx},'partNo');})"><svg style="width:16px;height:16px"><use href="#ic-camera"/></svg></button>
           </div>
         </div>
         `}
         ${isKit ? `
-        <div class="grid-1" style="max-width:none">${renderPartBarcode(idx, 'bag', 'Bag Barcode', kitLocked)}</div>
+        <div class="grid-1" style="max-width:none">${renderPartBarcode(idx, 'bag', 'Bag Barcode')}</div>
         ` : `
         <div style="font-size:10px;color:var(--muted-fg);margin-bottom:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">Barcode Verification \u2014 Type NO if none</div>
         <div class="grid-3">
@@ -902,23 +884,22 @@ function initSidebar(currentPage) {
       if (!isKit) { setBadge(idx, 'inner', p.innerMatch); setBadge(idx, 'outer', p.outerMatch); }
     });
     if (isKit) { setKitBadge('inner', formState.cartonInnerMatch); setKitBadge('outer', formState.cartonOuterMatch); }
-    setKitNoBadge(formState.cartonKitMatch);
     updateSubmit();
   }
 
-  function renderPartBarcode(idx, which, label, disabled) {
+  function renderPartBarcode(idx, which, label) {
     return `<div class="form-group">
       <div style="display:flex;align-items:center;justify-content:space-between;min-height:22px;margin-bottom:4px">
         <span class="form-label">${label}</span>
         <span id="match-badge-${idx}-${which}" class="match-badge" style="display:none"></span>
       </div>
       <div class="input-wrap">
-        <input type="text" id="f-${which}-${idx}" placeholder="Scan or type..." value="${escHtml(formState.parts[idx]?.[which]||'')}" ${disabled?'disabled':''} oninput="onPartBarcode(${idx},'${which}')" />
-        <button type="button" class="btn-icon" ${disabled?'disabled':''} onclick="openCamera('${label}',v=>{document.getElementById('f-${which}-${idx}').value=v;onPartBarcode(${idx},'${which}')})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
+        <input type="text" id="f-${which}-${idx}" placeholder="Scan or type..." value="${escHtml(formState.parts[idx]?.[which]||'')}" oninput="onPartBarcode(${idx},'${which}')" />
+        <button type="button" class="btn-icon" onclick="openCamera('${label}',v=>{document.getElementById('f-${which}-${idx}').value=v;onPartBarcode(${idx},'${which}')})"><svg style="width:14px;height:14px"><use href="#ic-camera"/></svg></button>
       </div>
     </div>`;
   }
-
+  
   function renderPartPhoto(idx, which, label) {
     const hasPhoto = formState.parts[idx]?.photos?.[which];
     const thumbUrl = getThumbUrl(hasPhoto, 400);
@@ -931,7 +912,7 @@ function initSidebar(currentPage) {
       <div id="photo-thumb-${idx}-${which}">${hasPhoto?`<img class="photo-thumb" src="${thumbUrl}" onclick="openLightbox('${escHtml(hasPhoto)}')" />`:''}</div>
     </div>`;
   }
-
+  
   function renderKitPhoto(which, label) {
     const hasPhoto = formState.cartonPhotos[which];
     const thumbUrl = getThumbUrl(hasPhoto, 400);
@@ -945,186 +926,14 @@ function initSidebar(currentPage) {
     </div>`;
   }
 
-  window.setType = function(type) { formState.cartonType = type; formState.parts = []; formState.cartonKit = ''; formState.cartonKitMatch = null; if (type === 'kit') formState.cartonPhotos = { allParts: null, innerBox: null, cartonLabel: null }; addPart(); renderForm(); };
-  window.addNewPart = function() { if (formState.cartonType === 'kit' && formState.cartonKitMatch !== true) { toast('Enter and verify the KIT No first', 'error'); return; } addPart(); renderParts(); setTimeout(() => { const c = document.getElementById('parts-container'); if (c) c.lastElementChild?.scrollIntoView({ behavior: 'smooth' }); }, 50); };
+  window.setType = function(type) { formState.cartonType = type; formState.parts = []; if (type === 'kit') formState.cartonPhotos = { allParts: null, innerBox: null, cartonLabel: null }; addPart(); renderForm(); };
+  window.addNewPart = function() { addPart(); renderParts(); setTimeout(() => { const c = document.getElementById('parts-container'); if (c) c.lastElementChild?.scrollIntoView({ behavior: 'smooth' }); }, 50); };
   window.removePartWindow = function(idx) { removePart(idx); };
   window.onPartField = function(idx, field) { const el = document.getElementById('f-' + field + '-' + idx); if (!el) return; let val = el.value; if (field !== 'qty') val = val.trim().toUpperCase(); formState.parts[idx][field] = val; if (field !== 'qty') el.value = val; if (field === 'partNo' || field === 'pi') { lookupCache = {}; triggerLookup(idx); } };
-  window.onPartBarcode = function(idx, which) {
-    if (formState.cartonType === 'kit' && formState.cartonKitMatch !== true) { toast('Enter and verify the KIT No first', 'error'); return; }
-    const el = document.getElementById('f-' + which + '-' + idx); if (!el) return; const val = el.value.trim().toUpperCase(); formState.parts[idx][which] = val; el.value = val; if (!val) { formState.parts[idx][which + 'Match'] = null; setBadge(idx, which, null); updateSubmit(); return; } if (val === 'NO') { formState.parts[idx][which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce[idx + '-' + which]); setBadge(idx, which, 'checking'); lookupDebounce[idx + '-' + which] = setTimeout(() => doLookup(idx, which, val), 450);
-  };
+  window.onPartBarcode = function(idx, which) { const el = document.getElementById('f-' + which + '-' + idx); if (!el) return; const val = el.value.trim().toUpperCase(); formState.parts[idx][which] = val; el.value = val; if (!val) { formState.parts[idx][which + 'Match'] = null; setBadge(idx, which, null); updateSubmit(); return; } if (val === 'NO') { formState.parts[idx][which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce[idx + '-' + which]); setBadge(idx, which, 'checking'); lookupDebounce[idx + '-' + which] = setTimeout(() => doLookup(idx, which, val), 450); };
   window.onKitBarcode = function(which) { const el = document.getElementById('f-kit-' + which); if (!el) return; const val = el.value.trim().toUpperCase(); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] = val; el.value = val; if (!val) { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = null; setKitBadge(which, null); updateSubmit(); return; } if (val === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } clearTimeout(lookupDebounce['kit-' + which]); setKitBadge(which, 'checking'); lookupDebounce['kit-' + which] = setTimeout(() => doKitLookup(which, val), 450); };
-
-  window.onKitNoField = function(val) {
-    const v = String(val || '').trim().toUpperCase();
-    formState.cartonKit = v;
-    const el = document.getElementById('f-cartonKit');
-    if (el) el.value = v;
-    if (!v) {
-      formState.cartonKitMatch = null;
-      formState.cartonPi = '';
-      setKitNoBadge(null);
-      updateSubmit();
-      updateAddButtonState();
-      updateKitSharedFieldsState();
-      renderParts();
-      return;
-    }
-    setKitNoBadge('checking');
-    clearTimeout(lookupDebounce['kitno']);
-    lookupDebounce['kitno'] = setTimeout(async () => {
-      try {
-        const res = await gasGet({ action: 'lookupKit', kit: v });
-        if (res && res.found) {
-          formState.cartonKitMatch = true;
-          formState.cartonPi = res.pi || '';
-        } else if (res === null) {
-          formState.cartonKitMatch = 'no-server';
-        } else {
-          formState.cartonKitMatch = false;
-          formState.cartonPi = '';
-        }
-      } catch(e) {
-        formState.cartonKitMatch = 'no-server';
-      }
-      setKitNoBadge(formState.cartonKitMatch);
-      updateSubmit();
-      updateAddButtonState();
-      updateKitSharedFieldsState();
-      renderParts();
-    }, 450);
-  };
-
-  function updateAddButtonState() {
-    const addBtn = document.getElementById('btn-add-part');
-    if (!addBtn) return;
-    const kitLocked = formState.cartonType === 'kit' && formState.cartonKitMatch !== true;
-    addBtn.disabled = kitLocked;
-    if (kitLocked) addBtn.setAttribute('title', 'Verify KIT No first');
-    else addBtn.removeAttribute('title');
-  }
-
-  function updateKitSharedFieldsState() {
-    const kitLocked = formState.cartonType === 'kit' && formState.cartonKitMatch !== true;
-    ['inner', 'outer'].forEach(function(which) {
-      const input = document.getElementById('f-kit-' + which);
-      const btn = input ? input.nextElementSibling : null;
-      if (input) input.disabled = kitLocked;
-      if (btn) btn.disabled = kitLocked;
-    });
-    const warn = document.getElementById('kit-warning');
-    if (warn) warn.classList.toggle('hidden', !kitLocked);
-  }
-
-  function setKitNoBadge(state) {
-    const badge = document.getElementById('match-badge-kitno');
-    const input = document.getElementById('f-cartonKit');
-    if (!badge || !input) return;
-    input.className = ''; badge.style.display = '';
-    if (state === null) { badge.style.display = 'none'; return; }
-    if (state === true) { badge.textContent = '\u2705 FOUND'; badge.className = 'match-badge ok'; input.className = 'match-ok'; }
-    else if (state === false) { badge.textContent = '\u274C NOT FOUND'; badge.className = 'match-badge fail'; input.className = 'match-fail'; }
-    else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; }
-    else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; }
-  }
-
-  function triggerLookup(idx) { ['bag', 'inner', 'outer'].forEach(w => { const bc = formState.parts[idx][w]; if (bc && bc !== 'NO') { clearTimeout(lookupDebounce[idx + '-' + w]); setBadge(idx, w, 'checking'); lookupDebounce[idx + '-' + w] = setTimeout(() => doLookup(idx, w, bc), 400); } }); }
-
-  async function doLookup(idx, which, barcode) {
-    const part = formState.parts[idx];
-    const isKit = formState.cartonType === 'kit';
-    if (isKit && formState.cartonKitMatch !== true) { setBadge(idx, which, false); updateSubmit(); return; }
-    const key = barcode + '|' + (part.pi || '') + '|' + (part.partNo || '') + '|' + which + '|' + (isKit ? formState.cartonKit : '');
-    if (lookupCache[key] !== undefined) { applyResult(idx, which, barcode, lookupCache[key]); return; }
-    try {
-      const params = { action: 'lookup', barcode, pi: part.pi || '', partNo: part.partNo || '', which: which };
-      if (isKit) { params.mode = 'kit'; params.kit = formState.cartonKit; }
-      const res = await gasGet(params);
-      if (res === null) { setBadge(idx, which, 'no-server'); updateSubmit(); return; }
-      lookupCache[key] = res;
-      applyResult(idx, which, barcode, res);
-    } catch { setBadge(idx, which, 'no-server'); updateSubmit(); }
-  }
-  function applyResult(idx, which, barcode, res) {
-    const part = formState.parts[idx];
-    if (part[which] === 'NO') { part[which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; }
-    if (res && res.found) {
-      if (which === 'bag' && res.partNo && !part.partNo) {
-        part.partNo = String(res.partNo).toUpperCase();
-        const pn = document.getElementById('f-partNo-' + idx);
-        if (pn) pn.value = part.partNo;
-      }
-      part[which + 'Match'] = !!res.matched;
-      setBadge(idx, which, !!res.matched);
-    } else {
-      part[which + 'Match'] = false;
-      setBadge(idx, which, 'notfound');
-    }
-    updateSubmit();
-  }
-
-  async function doKitLookup(which, barcode) {
-    if (formState.cartonKitMatch !== true) { setKitBadge(which, false); updateSubmit(); return; }
-    const repPartNo = formState.parts[0]?.partNo || '';
-    const key = barcode + '|' + formState.cartonKit + '|' + repPartNo + '|kit-' + which;
-    if (lookupCache[key] !== undefined) { applyKitResult(which, barcode, lookupCache[key]); return; }
-    try {
-      const res = await gasGet({ action: 'lookup', barcode, partNo: repPartNo, which: which, mode: 'kit', kit: formState.cartonKit });
-      if (res === null) { setKitBadge(which, 'no-server'); updateSubmit(); return; }
-      lookupCache[key] = res;
-      applyKitResult(which, barcode, res);
-    } catch { setKitBadge(which, 'no-server'); updateSubmit(); }
-  }
-  function applyKitResult(which, barcode, res) {
-    const stateKey = 'carton' + which.charAt(0).toUpperCase() + which.slice(1);
-    if (formState[stateKey] === 'NO') { formState[stateKey + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; }
-    if (res && res.found) {
-      formState[stateKey + 'Match'] = !!res.matched;
-      setKitBadge(which, !!res.matched);
-    } else {
-      formState[stateKey + 'Match'] = false;
-      setKitBadge(which, 'notfound');
-    }
-    updateSubmit();
-  }
-
-  function setBadge(idx, which, state) { const badge = document.getElementById('match-badge-' + idx + '-' + which); const input = document.getElementById('f-' + which + '-' + idx); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === 'notfound') { badge.textContent = '\u274C NO PART/PI MATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
-  function setKitBadge(which, state) { const badge = document.getElementById('match-badge-kit-' + which); const input = document.getElementById('f-kit-' + which); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === 'notfound') { badge.textContent = '\u274C NO KIT/PART MATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
-
-  function updateSubmit() {
-    const btn = document.getElementById('btn-submit');
-    const mismatchWarn = document.getElementById('mismatch-warn');
-    if (!btn) return;
-    let hasMismatch = false, allVerified = true;
-    const isKit = formState.cartonType === 'kit';
-
-    if (isKit && formState.cartonKitMatch !== true) {
-      allVerified = false;
-      if (mismatchWarn) mismatchWarn.classList.toggle('hidden', true);
-      btn.disabled = true;
-      return;
-    }
-
-    formState.parts.forEach(p => {
-      const checks = isKit ? ['bag'] : ['bag', 'inner', 'outer'];
-      checks.forEach(w => { const m = p[w + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; });
-    });
-    if (isKit) {
-  ['inner', 'outer'].forEach(w => {
-    const key = 'carton' + w.charAt(0).toUpperCase() + w.slice(1) + 'Match';
-    const m = formState[key];
-    
-    console.log(`Checking ${key}:`, m); // Debugging line
-
-    if (m === false) hasMismatch = true;
-    const done = m === true || m === 'no' || m === 'error' || m === 'no-server';
-    if (!done) allVerified = false;
-  });
-}
-    if (mismatchWarn) mismatchWarn.classList.toggle('hidden', !hasMismatch);
-    btn.disabled = hasMismatch || !allVerified;
-  }
-
+  window.syncKit = function() { if (formState.cartonType !== 'kit') return; const pi = formState.cartonPi; formState.parts.forEach(p => { p.pi = pi; }); triggerLookup(0); };
+  
   window.handlePartPhoto = async function(idx, which, input) { 
     const file = input.files[0]; 
     if (!file) return; 
@@ -1137,7 +946,7 @@ function initSidebar(currentPage) {
     if (thumb) thumb.innerHTML = '<img class="photo-thumb" src="' + getThumbUrl(dataUri, 400) + '" onclick="openLightbox(\'' + escHtml(dataUri) + '\')" />'; 
     input.value = ''; 
   };
-
+  
   window.handleKitPhoto = async function(which, input) { 
     try { 
       const file = input.files[0]; 
@@ -1154,6 +963,32 @@ function initSidebar(currentPage) {
     } 
   };
 
+  function triggerLookup(idx) { ['bag', 'inner', 'outer'].forEach(w => { const bc = formState.parts[idx][w]; if (bc && bc !== 'NO') { clearTimeout(lookupDebounce[idx + '-' + w]); setBadge(idx, w, 'checking'); lookupDebounce[idx + '-' + w] = setTimeout(() => doLookup(idx, w, bc), 400); } }); }
+
+  async function doLookup(idx, which, barcode) { const part = formState.parts[idx]; const key = barcode + '|' + (part.pi || '') + '|' + (part.partNo || '') + '|' + which; if (lookupCache[key] !== undefined) { applyResult(idx, which, barcode, lookupCache[key]); return; } try { const res = await gasGet({ action: 'lookup', barcode, pi: part.pi || '', partNo: part.partNo || '' }); if (res === null) { setBadge(idx, which, 'no-server'); updateSubmit(); return; } lookupCache[key] = res; applyResult(idx, which, barcode, res); } catch { setBadge(idx, which, 'no-server'); updateSubmit(); } }
+  function applyResult(idx, which, barcode, res) { const part = formState.parts[idx]; if (part[which] === 'NO') { part[which + 'Match'] = 'no'; setBadge(idx, which, 'no'); updateSubmit(); return; } if (res && res.found) { const bc = String(barcode).toUpperCase(); if (which === 'bag' && res.partNo && !part.partNo) { part.partNo = String(res.partNo).toUpperCase(); const pn = document.getElementById('f-partNo-' + idx); if (pn) pn.value = part.partNo; } const bagBC = String(res.bagBarcode || '').toUpperCase(); const innerBC = String(res.innerBarcode || '').toUpperCase(); const outerBC = String(res.outerBarcode || '').toUpperCase(); let isMatch = false; if (which === 'bag') isMatch = (bc === bagBC); else if (which === 'inner') isMatch = (bc === innerBC); else if (which === 'outer') isMatch = (bc === outerBC); part[which + 'Match'] = isMatch; setBadge(idx, which, isMatch); } else { part[which + 'Match'] = false; setBadge(idx, which, false); } updateSubmit(); }
+
+  async function doKitLookup(which, barcode) { const key = barcode + '|' + (formState.cartonPi || '') + '|kit-' + which; if (lookupCache[key] !== undefined) { applyKitResult(which, barcode, lookupCache[key]); return; } try { const repPartNo = formState.parts[0]?.partNo || ''; const res = await gasGet({ action: 'lookup', barcode, pi: formState.cartonPi || '', partNo: repPartNo }); if (res === null) { setKitBadge(which, 'no-server'); updateSubmit(); return; } lookupCache[key] = res; applyKitResult(which, barcode, res); } catch { setKitBadge(which, 'no-server'); updateSubmit(); } }
+  function applyKitResult(which, barcode, res) { if (formState['carton' + which.charAt(0).toUpperCase() + which.slice(1)] === 'NO') { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = 'no'; setKitBadge(which, 'no'); updateSubmit(); return; } if (res && res.found) { const bc = String(barcode).toUpperCase(); const innerBC = String(res.innerBarcode || '').toUpperCase(); const outerBC = String(res.outerBarcode || '').toUpperCase(); let isMatch = false; if (which === 'inner') isMatch = (bc === innerBC); else if (which === 'outer') isMatch = (bc === outerBC); formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = isMatch; setKitBadge(which, isMatch); } else { formState['carton' + which.charAt(0).toUpperCase() + which.slice(1) + 'Match'] = false; setKitBadge(which, false); } updateSubmit(); }
+
+  function setBadge(idx, which, state) { const badge = document.getElementById('match-badge-' + idx + '-' + which); const input = document.getElementById('f-' + which + '-' + idx); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
+  function setKitBadge(which, state) { const badge = document.getElementById('match-badge-kit-' + which); const input = document.getElementById('f-kit-' + which); if (!badge || !input) return; input.className = ''; badge.style.display = ''; if (state === null) { badge.style.display = 'none'; return; } if (state === true) { badge.textContent = '\u2705 MATCH'; badge.className = 'match-badge ok'; input.className = 'match-ok'; } else if (state === false) { badge.textContent = '\u274C MISMATCH'; badge.className = 'match-badge fail'; input.className = 'match-fail'; } else if (state === 'no') { badge.textContent = 'NO BARCODE'; badge.className = 'match-badge no-bc'; input.className = 'match-amber'; } else if (state === 'checking') { badge.textContent = 'CHECKING...'; badge.className = 'match-badge checking'; } else if (state === 'no-server') { badge.textContent = '\u26A0 SERVER OFFLINE'; badge.className = 'match-badge checking'; input.className = 'match-amber'; } }
+
+  function updateSubmit() {
+    const btn = document.getElementById('btn-submit');
+    const mismatchWarn = document.getElementById('mismatch-warn');
+    if (!btn) return;
+    let hasMismatch = false, allVerified = true;
+    const isKit = formState.cartonType === 'kit';
+    formState.parts.forEach(p => {
+      const checks = isKit ? ['bag'] : ['bag', 'inner', 'outer'];
+      checks.forEach(w => { const m = p[w + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; });
+    });
+    if (isKit) { ['inner', 'outer'].forEach(w => { const m = formState['carton' + w.charAt(0).toUpperCase() + w.slice(1) + 'Match']; if (m === false) hasMismatch = true; const done = m === true || m === 'no' || m === 'error' || m === 'no-server'; if (!done) allVerified = false; }); }
+    if (mismatchWarn) mismatchWarn.classList.toggle('hidden', !hasMismatch);
+    btn.disabled = hasMismatch || !allVerified;
+  }
+
   window.submitEntry = async function() {
     if (isSubmitting) return;
     isSubmitting = true;
@@ -1162,18 +997,17 @@ function initSidebar(currentPage) {
     if (!cartonId) { toast('Carton ID is required', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
 
     if (formState.cartonType === 'kit') {
-      const kitNo = (document.getElementById('f-cartonKit') || {}).value?.trim().toUpperCase() || formState.cartonKit;
+      const kitPi = (document.getElementById('f-cartonPi') || {}).value?.trim().toUpperCase() || formState.cartonPi;
       const kitQty = (document.getElementById('f-cartonQty') || {}).value || formState.cartonQty;
-      if (!kitNo) { toast('KIT No is required for Kit', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
-      if (formState.cartonKitMatch !== true) { toast('KIT No must be verified against Master Register (Column C) before submitting', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
-      formState.cartonKit = kitNo; formState.cartonQty = kitQty; formState.parts.forEach(p => { p.qty = kitQty; });
+      if (!kitPi) { toast('PI No is required for Kit', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+      formState.cartonPi = kitPi; formState.cartonQty = kitQty; formState.parts.forEach(p => { p.pi = kitPi; p.qty = kitQty; });
     }
 
     const isKit = formState.cartonType === 'kit';
     for (let i = 0; i < formState.parts.length; i++) {
       const p = formState.parts[i];
       if (!p.partNo) { toast('Part ' + (i + 1) + ': Part No required', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
-      if (p.bagMatch === false) { toast('Part ' + (i + 1) + ': Bag barcode / Part No mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
+      if (p.bagMatch === false) { toast('Part ' + (i + 1) + ': Bag barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
       if (!isKit && (p.innerMatch === false || p.outerMatch === false)) { toast('Part ' + (i + 1) + ': Barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; }
     }
     if (isKit) { if (formState.cartonInnerMatch === false) { toast('Inner barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; } if (formState.cartonOuterMatch === false) { toast('Outer barcode mismatch', 'error'); isSubmitting = false; setButtonLoading('btn-submit', false); return; } }
@@ -1202,6 +1036,7 @@ function initSidebar(currentPage) {
         maybeUpload(formState.cartonPhotos.cartonLabel, 'kit_carton_' + cartonId + '_' + Date.now() + '.jpg'),
       ]);
     } else {
+      // Upload photos for EVERY part (was previously only part 1)
       for (let i = 0; i < formState.parts.length; i++) {
         const p = formState.parts[i];
         const photos = p.photos || { bag: null, inner: null, outer: null };
@@ -1210,6 +1045,7 @@ function initSidebar(currentPage) {
           maybeUpload(photos.inner, 'inner_' + cartonId + '_p' + (i + 1) + '_' + Date.now() + '.jpg'),
           maybeUpload(photos.outer, 'carton_' + cartonId + '_p' + (i + 1) + '_' + Date.now() + '.jpg'),
         ]);
+        // Store the real Drive URLs back on the part so they get saved in PartsJSON
         p.photos = { bag: bagUrl || '', inner: innerUrl || '', outer: outerUrl || '' };
       }
       const firstPhotos = formState.parts[0].photos || {};
@@ -1229,9 +1065,9 @@ function initSidebar(currentPage) {
 
     let parts;
     if (isKit) {
-      const kitNo = (formState.cartonKit || '').toUpperCase();
+      const kitPi = (formState.cartonPi || '').toUpperCase();
       const kitQty = parseInt(formState.cartonQty) || 1;
-      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || formState.cartonPi || '').toUpperCase(), kit: kitNo, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
+      parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: kitPi, qty: kitQty, bag: cleanBC(p.bag), inner: cleanBC(formState.cartonInner), outer: cleanBC(formState.cartonOuter), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(formState.cartonInnerMatch), outerMatch: matchBool(formState.cartonOuterMatch) }));
     } else {
       parts = formState.parts.map(p => ({ partNo: p.partNo.toUpperCase(), pi: (p.pi || '').toUpperCase(), qty: parseInt(p.qty) || 1, bag: cleanBC(p.bag), inner: cleanBC(p.inner), outer: cleanBC(p.outer), bagMatch: matchBool(p.bagMatch), innerMatch: matchBool(p.innerMatch), outerMatch: matchBool(p.outerMatch), photos: p.photos || { bag: '', inner: '', outer: '' } }));
     }
@@ -1243,7 +1079,7 @@ function initSidebar(currentPage) {
       cartonRef: cartonRef,
       cartonId: cartonId,
       cartonType: formState.cartonType,
-      cartonPI: isKit ? (formState.cartonKit || '') : (formState.cartonPi || (parts[0] && parts[0].pi) || ''),
+      cartonPI: formState.cartonPi || (parts[0] && parts[0].pi) || '',
       cartonQty: formState.cartonQty || (parts[0] && parts[0].qty) || '1',
       customer: staffSelectedList.customer,
       parts: parts,
