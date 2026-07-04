@@ -282,7 +282,7 @@ tr.selected td{background:rgba(91,124,245,.15)}
 <script>
 'use strict';
 
-var GAS_URL = 'https://script.google.com/macros/s/AKfycbz0pv1JdCi9HjZ7XMzx2p9wuEMoGM2GeG9hckfMonzkaucf4i1M1kKzxwFufx0ecwWq5A/exec';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbxtHkqSH3iUCe-8ZUT3PO500Rpm3OLTTEIrvLGP36sO9ZoDRVOLD29e2P25NlsTRdfy1Q/exec';
 var ALL_CARTONS = [];
 var ALL_LISTS = [];
 var CURRENT_LIST = null;
@@ -681,6 +681,17 @@ function closeTransferModalOnOverlay(e) {
   if (e.target === e.currentTarget) closeTransferModal();
 }
 
+// ============================================================
+// Submit a carton transfer.
+// v3.6 FIX: each selected carton is sent as ONE entry carrying
+// ALL of its rows (`rows: [...]`). Previously, multi-part/kit
+// cartons were flattened into one entry PER ROW, which caused
+// approveTransfer() on the backend to treat every part-row as
+// its own separate carton (splitting a single 4-part carton
+// into four cartons with four different new Carton IDs). Now
+// a carton's rows always travel together and get renumbered as
+// ONE unit on approval.
+// ============================================================
 async function submitTransfer() {
   var toList = document.getElementById('trToList').value;
   var prefix = document.getElementById('trNewPrefix').value.trim();
@@ -694,9 +705,9 @@ async function submitTransfer() {
   SELECTED_CARTONS.forEach(function(idx) {
     var c = ALL_CARTONS[idx];
     var rows = c._rows && c._rows.length ? c._rows : [c.row];
-    for (var r = 0; r < rows.length; r++) {
-      cartons.push({ cartonRef: c.cartonRef, cartonId: c.cartonId, row: rows[r] });
-    }
+    // Keep ALL rows of this carton grouped together under ONE entry, so
+    // multi-part / kit cartons stay as a single carton through transfer.
+    cartons.push({ cartonRef: c.cartonRef, cartonId: c.cartonId, rows: rows });
     cartonIds.push(c.cartonId);
   });
   
