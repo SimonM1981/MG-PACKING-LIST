@@ -35,7 +35,7 @@
     <div class="page-header">
       <div>
         <div class="page-title" style="color:var(--danger)"><svg style="color:var(--danger)"><use href="#ic-alert"/></svg>Reject List</div>
-        <div class="page-subtitle">Cartons rejected by checker \u2014 click Edit to fix and resubmit.</div>
+        <div class="page-subtitle">Cartons rejected by checker — click Edit to fix and resubmit.</div>
       </div>
       <button class="btn btn-outline btn-sm" onclick="loadRejects()"><svg><use href="#ic-refresh"/></svg>Refresh</button>
     </div>
@@ -56,11 +56,19 @@
 
     const el = document.getElementById('reject-content');
     const groups = {};
-    for (const r of rejected) { const key = (r.customer || 'unknown') + '|' + (r.cartonId || 'unknown'); if (!groups[key]) groups[key] = []; groups[key].push(r); }
+    for (const r of rejected) {
+      const key = (r.customer || 'unknown') + '|' + (r.cartonId || 'unknown');
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+    }
     const groupKeys = Object.keys(groups);
 
     let html = `<div class="stat-grid" style="max-width:300px;margin-bottom:20px"><div class="stat-card"><div class="label">Total Rejected</div><div class="value text-danger">${groupKeys.length}</div></div></div>`;
-    if (groupKeys.length === 0) { html += '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No rejected entries \u2014 great job!</p></div>'; el.innerHTML = html; return; }
+    if (groupKeys.length === 0) {
+      html += '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No rejected entries — great job!</p></div>';
+      el.innerHTML = html;
+      return;
+    }
 
     for (const key of groupKeys) {
       const grecs = groups[key];
@@ -71,6 +79,7 @@
       const totalQty = grecs.reduce((s, r) => s + (parseInt(r.qty) || 0), 0);
       const escCartonId = escHtml(first.cartonId || '');
       const escCustomer = escHtml(first.customer || '');
+      const escListRef = escHtml(first.listRef || first.packingList || '');
 
       html += `<div class="record-card rejected" style="border-left:4px solid var(--danger)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -78,17 +87,17 @@
           <span class="badge badge-red">REJECTED</span>
         </div>
         <div style="font-size:0.85rem;color:var(--muted-fg);margin-bottom:6px">
-          <strong>Carton:</strong> ${escCartonId || '\u2014'} | <strong>Parts:</strong> ${escHtml(partNos.join(', ') || '\u2014')}
+          <strong>PL:</strong> ${escListRef || '—'} | <strong>Carton:</strong> ${escCartonId || '—'} | <strong>Parts:</strong> ${escHtml(partNos.join(', ') || '—')}
           ${grecs.length > 1 ? '<span class="badge badge-muted" style="margin-left:6px">' + grecs.length + ' parts</span>' : ''}
         </div>
         <div style="display:flex;gap:12px;font-size:0.8rem;color:var(--muted-fg);margin-bottom:4px">
-          <span><strong>PI:</strong> ${escHtml(pis.join(', ') || '\u2014')}</span><span><strong>Qty:</strong> ${totalQty} pcs</span><span><strong>Packed:</strong> ${escHtml(first.packedBy || '\u2014')}</span>
+          <span><strong>PI:</strong> ${escHtml(pis.join(', ') || '—')}</span><span><strong>Qty:</strong> ${totalQty} pcs</span><span><strong>Packed:</strong> ${escHtml(first.packedBy || '—')}</span>
         </div>
         <div style="font-size:0.8rem;color:var(--danger);margin-top:8px;font-style:italic;background:var(--danger-dim);padding:8px;border-radius:6px;border:1px solid var(--danger-border)">
           <strong>Reason:</strong> ${escHtml(first.remarks || 'No reason')}<br/><strong>By:</strong> ${escHtml(first.checker || 'Checker')}
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn btn-danger btn-sm" onclick="editCarton('${escCartonId.replace(/'/g, "\\'")}', '${escCustomer.replace(/'/g, "\\'")}', '${rowNums}')">
+          <button class="btn btn-danger btn-sm" onclick="editCarton('${escCartonId.replace(/'/g, "\\'")}', '${escCustomer.replace(/'/g, "\\'")}', '${rowNums}', '${escListRef.replace(/'/g, "\\'")}')">
             <svg><use href="#ic-edit"/></svg>Edit & Resubmit
           </button>
           <button class="btn btn-outline btn-sm" onclick="openDetailGroup('${rowNums}')">
@@ -100,15 +109,24 @@
     el.innerHTML = html;
   }
 
-  window.editCarton = async function(cartonId, customer, rowNums) {
-    let lists = [];
-    try { const res = await gasGet({ action: 'packingLists' }); if (res && res.lists) lists = res.lists; } catch(e) {}
-    const customerLower = (customer || '').toLowerCase();
-    let foundList = lists.find(l => (l.customer || '').toLowerCase() === customerLower);
-    if (!foundList) foundList = lists.find(l => (l.customer || '').toLowerCase().includes(customerLower));
-    if (!foundList) { toast('Packing list not found for: ' + customer, 'error'); return; }
+  window.editCarton = async function(cartonId, customer, rowNums, listRef) {
+    // If listRef not provided, fallback to search by customer
+    if (!listRef) {
+      let lists = [];
+      try { const res = await gasGet({ action: 'packingLists' }); if (res && res.lists) lists = res.lists; } catch(e) {}
+      const customerLower = (customer || '').toLowerCase();
+      let foundList = lists.find(l => (l.customer || '').toLowerCase() === customerLower);
+      if (!foundList) foundList = lists.find(l => (l.customer || '').toLowerCase().includes(customerLower));
+      if (!foundList) { toast('Packing list not found for: ' + customer, 'error'); return; }
+      listRef = foundList.listRef;
+    }
     toast('Opening packing list...', 'success');
-    localStorage.setItem('mg_pending_edit', JSON.stringify({ listRef: foundList.listRef, cartonId: cartonId, logRows: rowNums.split(',').map(Number).filter(Boolean), gasRows: rowNums.split(',').map(Number).filter(Boolean) }));
+    localStorage.setItem('mg_pending_edit', JSON.stringify({
+      listRef: listRef,
+      cartonId: cartonId,
+      logRows: rowNums.split(',').map(Number).filter(Boolean),
+      gasRows: rowNums.split(',').map(Number).filter(Boolean)
+    }));
     goTo('staff');
   };
 
@@ -125,12 +143,12 @@
 
     const partsHtml = records.map((r, idx) => {
       return `<div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:10px;background:var(--muted)">
-        <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;color:var(--primary)">Part ${idx + 1}: ${escHtml(r.partNo || '\u2014')}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:8px"><div><strong>PI:</strong> ${escHtml(r.pi || '\u2014')}</div><div><strong>Qty:</strong> ${r.qty || '0'} pcs</div></div>
+        <div style="font-weight:700;font-size:0.9rem;margin-bottom:8px;color:var(--primary)">Part ${idx + 1}: ${escHtml(r.partNo || '—')}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:8px"><div><strong>PI:</strong> ${escHtml(r.pi || '—')}</div><div><strong>Qty:</strong> ${r.qty || '0'} pcs</div></div>
         <div style="display:flex;flex-direction:column;gap:4px;font-size:0.8rem">
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${r.bagMatch ? 'var(--green)' : 'var(--danger)'}">${r.bagMatch ? '\u2705' : '\u274C'}</span><span><strong>Bag:</strong> ${escHtml(r.bag || '\u2014')}</span></div>
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${r.innerMatch ? 'var(--green)' : 'var(--danger)'}">${r.innerMatch ? '\u2705' : '\u274C'}</span><span><strong>Inner:</strong> ${escHtml(r.inner || '\u2014')}</span></div>
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${r.outerMatch ? 'var(--green)' : 'var(--danger)'}">${r.outerMatch ? '\u2705' : '\u274C'}</span><span><strong>Outer:</strong> ${escHtml(r.outer || '\u2014')}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${r.bagMatch ? 'var(--green)' : 'var(--danger)'}">${r.bagMatch ? '✅' : '❌'}</span><span><strong>Bag:</strong> ${escHtml(r.bag || '—')}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${r.innerMatch ? 'var(--green)' : 'var(--danger)'}">${r.innerMatch ? '✅' : '❌'}</span><span><strong>Inner:</strong> ${escHtml(r.inner || '—')}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border-radius:6px"><span style="color:${r.outerMatch ? 'var(--green)' : 'var(--danger)'}">${r.outerMatch ? '✅' : '❌'}</span><span><strong>Outer:</strong> ${escHtml(r.outer || '—')}</span></div>
         </div>
       </div>`;
     }).join('');
@@ -143,8 +161,8 @@
         </div>
         <div class="modal-body">
           <div class="detail-kv" style="margin-bottom:16px">
-            <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(first.cartonId || '\u2014')}</div></div>
-            <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(first.packedBy || '\u2014')}</div></div>
+            <div class="kv-box"><div class="kv-label">Carton ID</div><div class="kv-value">${escHtml(first.cartonId || '—')}</div></div>
+            <div class="kv-box"><div class="kv-label">Packed By</div><div class="kv-value">${escHtml(first.packedBy || '—')}</div></div>
             <div class="kv-box"><div class="kv-label">Total Qty</div><div class="kv-value">${totalQty}</div></div>
             <div class="kv-box"><div class="kv-label">Parts</div><div class="kv-value">${records.length}</div></div>
           </div>
