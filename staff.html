@@ -246,6 +246,7 @@ tr.clickable{cursor:pointer}
 .password-gate-icon{width:56px;height:56px;color:var(--primary);margin-bottom:20px;opacity:.7}
 .password-gate-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;color:var(--text)}
 .password-gate-sub{font-size:13px;color:var(--muted-fg);margin-bottom:24px;line-height:1.6}
+select:disabled{opacity:.5;cursor:not-allowed;background:var(--muted);color:var(--muted-fg)}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--muted-fg)}
 </style>
 <base target="_blank">
@@ -558,6 +559,7 @@ function initSidebar(currentPage) {
   let editMode = false;
   let editCartonRows = [];
   let editCartonRef = '';
+  let editOriginalListRef = '';
 
   async function load() {
     let lists = null;
@@ -598,7 +600,7 @@ function initSidebar(currentPage) {
             <svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><use href="#ic-refresh"/></svg>Refresh
           </button>
         </div>
-        <select id="staff-list-select" onchange="onListChange(this)" style="width:100%;max-width:400px" ${editMode ? 'disabled' : ''}>`;
+        <select id="staff-list-select" onchange="onListChange(this)" style="width:100%;max-width:400px" ${editMode ? 'disabled="disabled"' : ''}>`;
     if (availableLists.length === 0) {
       html += '<option>No available packing lists</option>';
     } else {
@@ -628,6 +630,7 @@ function initSidebar(currentPage) {
 
   async function loadEditMode(pe) {
     editMode = true;
+    editOriginalListRef = staffSelectedList ? staffSelectedList.listRef : '';
     editCartonRows = pe.row ? [pe.row] : [];
     formState.cartonId = pe.cartonId || '';
     try { toast('Loading carton data for editing...', 'success'); } catch(e) {}
@@ -1236,7 +1239,7 @@ function initSidebar(currentPage) {
     const recordData = {
       action: 'saveRecord',
       rows: editMode && editCartonRows && editCartonRows.length ? editCartonRows : null,
-      listRef: staffSelectedList.listRef,
+      listRef: (editMode && editOriginalListRef) ? editOriginalListRef : staffSelectedList.listRef,
       cartonRef: cartonRef,
       cartonId: cartonId,
       cartonType: formState.cartonType,
@@ -1275,6 +1278,7 @@ function initSidebar(currentPage) {
     editMode = false;
     editCartonRows = [];
     editCartonRef = '';
+    editOriginalListRef = '';
     renderForm();
     toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
     isSubmitting = false;
