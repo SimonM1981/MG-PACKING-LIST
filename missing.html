@@ -4,28 +4,16 @@
 <title>Missing Cartons — MG Packing</title>
 <link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
 <style>
-.diag-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
-.diag-table th,.diag-table td{border:1px solid var(--border);padding:6px 8px;text-align:left}
-.diag-table th{background:var(--surface-2);font-size:10px;text-transform:uppercase;letter-spacing:.05em}
-.diag-table td{font-family:monospace;font-size:11px}
-.gap-box{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px}
-.gap-box h4{margin:0 0 8px;font-size:13px}
-.trace-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;font-size:12px}
-.trace-badge{background:var(--surface-3);padding:2px 8px;border-radius:4px;font-family:monospace}
-.trace-ok{color:var(--green)}
-.trace-fail{color:var(--red)}
+.raw-dump{background:var(--surface-2);border:2px solid var(--red);border-radius:8px;padding:12px;margin-bottom:16px;font-family:monospace;font-size:11px;white-space:pre-wrap;word-break:break-all;color:var(--red);max-height:300px;overflow:auto}
+.diag-ok{color:var(--green);font-weight:bold}
+.diag-fail{color:var(--red);font-weight:bold}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="sidebar">
-    <div class="brand">
-      <div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div>
-    </div>
-    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode">
-      <svg class="moon"><use href="#ic-moon"/></svg>
-      <svg class="sun"><use href="#ic-sun"/></svg>
-    </button>
+    <div class="brand"><div><div class="brand-name">MG Packing</div><div class="brand-sub">System v3.2</div></div></div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle day/night mode"><svg class="moon"><use href="#ic-moon"/></svg><svg class="sun"><use href="#ic-sun"/></svg></button>
     <div class="section-label">Staff</div>
     <nav>
       <a href="#" data-page="index" onclick="goTo('index');return false"><svg><use href="#ic-list"/></svg>Packing Lists</a>
@@ -45,10 +33,7 @@
   </div>
   <div id="main">
     <div class="page-header">
-      <div>
-        <div class="page-title"><svg><use href="#ic-missing"/></svg>Missing Cartons</div>
-        <div class="page-subtitle">Check for gaps in carton sequences across all packing lists.</div>
-      </div>
+      <div><div class="page-title"><svg><use href="#ic-missing"/></svg>Missing Cartons</div><div class="page-subtitle">Check for gaps in carton sequences across all packing lists.</div></div>
     </div>
     <div id="missing-content"><div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading cartons from all lists...</p></div></div>
   </div>
@@ -58,79 +43,51 @@
 (function() {
   initSidebar('missing');
 
-  /* Try every possible property name for Carton ID */
   function getCartonId(c) {
-    const candidates = [
-      'cartonId','CartonID','cartonID','carton_id','CartonId','cartonId',
-      'Carton ID','CartonID','id','ID','Id','carton','Carton','CARTON',
-      'cartonRef','CartonRef','carton_ref','Carton_Ref'
-    ];
-    for (const k of candidates) {
-      if (c[k] != null && String(c[k]).trim() !== '') return String(c[k]).trim();
-    }
-    // Deep search: if nothing found, scan all string properties
+    // Direct known properties
+    const direct = c.cartonId || c.CartonID || c.cartonID || c.carton_id || c.CartonId || c['Carton ID'] || c['CartonID'] || c.id || c.ID || c.Id || c.carton || c.Carton || c.CARTON || c.cartonRef || c.CartonRef || c.Carton_Ref || c.cref || c.CRef;
+    if (direct != null && String(direct).trim() !== '') return String(direct).trim();
+
+    // If c has a .cartonId property that is literally undefined but c['cartonId'] exists... check all keys
     for (const k in c) {
-      if (typeof c[k] === 'string' && /[A-Z]?\d{2,}/i.test(c[k])) {
-        // Heuristic: if it looks like a carton ID and key contains 'carton' or 'id'
-        const kl = k.toLowerCase();
-        if (kl.includes('carton') || kl.includes('id') || kl.includes('ref')) return c[k];
+      const kl = k.toLowerCase();
+      if ((kl.includes('carton') || kl.includes('cref') || kl === 'id') && c[k] != null) {
+        const v = String(c[k]).trim();
+        if (v && /[A-Z0-9]/.test(v)) return v;
       }
     }
     return '';
   }
 
-  /* Try every possible property name for Part Number */
   function getPartNo(c) {
     if (c.parts && Array.isArray(c.parts) && c.parts[0]) {
       const p = c.parts[0].partNo || c.parts[0].PartNo || c.parts[0].part_no || c.parts[0]['Part No'] || c.parts[0].partNumber || c.parts[0].PartNumber || '';
       if (p) return String(p).trim();
     }
-    const candidates = [
-      'partNo','PartNo','part_no','Part_No','Part No','PartNo','partNumber',
-      'PartNumber','part','Part','PART','partNumber','itemNo','ItemNo','item_no',
-      'Item_No','item','Item','ITEM','productCode','ProductCode','product_code'
-    ];
-    for (const k of candidates) {
-      if (c[k] != null && String(c[k]).trim() !== '') return String(c[k]).trim();
-    }
-    return 'UNKNOWN';
+    const val = c.partNo || c.PartNo || c.part_no || c.Part_No || c['Part No'] || c['PartNo'] || c.partNumber || c.PartNumber || c.part || c.Part || c.PART || c.itemNo || c.ItemNo || c.item || c.Item || c.ITEM || c.productCode || c.ProductCode || c.code || c.Code;
+    return String(val || '').trim() || 'UNKNOWN';
   }
 
-  function detectMissing(cartons, trace) {
+  function detectMissing(cartons) {
     if (!cartons || cartons.length < 2) return [];
     const byPart = {};
-    cartons.forEach((c, idx) => {
+    cartons.forEach(c => {
       const partNo = getPartNo(c).toUpperCase();
       if (!byPart[partNo]) byPart[partNo] = [];
-      byPart[partNo].push({c, idx});
+      byPart[partNo].push(c);
     });
     const missing = [];
     for (const partNo in byPart) {
       const group = byPart[partNo];
-      if (group.length < 2) {
-        trace.push({partNo, count: group.length, reason: 'Only 1 carton in this part group'});
-        continue;
-      }
-      const parsed = group.map(({c, idx}) => {
+      if (group.length < 2) continue;
+      const parsed = group.map(c => {
         const id = getCartonId(c).toUpperCase();
-        trace.push({idx, partNo, rawId: getCartonId(c), upperId: id});
-        if (!id) {
-          trace.push({idx, partNo, reason: 'Empty ID after getCartonId'});
-          return null;
-        }
+        if (!id) return null;
         const m = id.match(/^([A-Z]*-?)(\d+)(.*)$/);
-        if (!m) {
-          trace.push({idx, partNo, id, reason: 'Regex did not match /^([A-Z]*-?)(\\d+)(.*)$/'});
-          return null;
-        }
-        trace.push({idx, partNo, id, prefix: m[1]||'', num: parseInt(m[2],10), suffix: m[3]||'', numLen: m[2].length, reason: 'Parsed OK'});
-        return { id, prefix: m[1] || '', num: parseInt(m[2], 10), suffix: m[3] || '', numLen: m[2].length, idx };
+        if (!m) return null;
+        return { id, prefix: m[1] || '', num: parseInt(m[2], 10), suffix: m[3] || '', numLen: m[2].length };
       }).filter(Boolean);
-
-      if (parsed.length < 2) {
-        trace.push({partNo, count: parsed.length, reason: 'Less than 2 cartons passed regex parsing'});
-        continue;
-      }
+      if (parsed.length < 2) continue;
 
       const prefixGroups = {};
       const padLengths = {};
@@ -140,23 +97,16 @@
         prefixGroups[key].push(p.num);
         padLengths[key] = Math.max(padLengths[key], p.numLen);
       });
-
       for (const key in prefixGroups) {
         const nums = prefixGroups[key].sort((a, b) => a - b);
         const [prefix, suffix] = key.split('|');
         const padLen = padLengths[key];
-        trace.push({partNo, prefix, suffix, nums: nums.join(','), padLen, reason: 'Checking gaps'});
         for (let i = 0; i < nums.length - 1; i++) {
-          const gap = nums[i + 1] - nums[i];
-          if (gap > 20) {
-            trace.push({partNo, prefix, from: nums[i], to: nums[i+1], gap, reason: 'Gap > 20, skipped'});
-            continue;
-          }
+          if (nums[i + 1] - nums[i] > 20) continue;
           for (let n = nums[i] + 1; n < nums[i + 1]; n++) {
             missing.push(prefix + String(n).padStart(padLen, '0') + suffix);
             if (missing.length >= 50) return missing;
           }
-          trace.push({partNo, prefix, from: nums[i], to: nums[i+1], found: gap-1, reason: 'Gaps found'});
         }
       }
     }
@@ -167,81 +117,53 @@
     const el = document.getElementById('missing-content');
     const allCartons = [];
     let lists = [];
-    try { 
-      const res = await gasGet({ action: 'packingLists' }); 
-      if (res && res.lists) lists = res.lists; 
-    } catch(e) { console.error('packingLists error', e); }
+    try { const res = await gasGet({ action: 'packingLists' }); if (res && res.lists) lists = res.lists; } catch(e) {}
 
     for (const list of lists) {
-      try { 
-        const res = await gasGet({ action: 'cartons', listRef: list.listRef }); 
-        if (res && res.cartons && Array.isArray(res.cartons)) { 
-          res.cartons.forEach(c => { 
-            c._listRef = list.listRef; 
-            c._customer = list.customer; 
-          }); 
-          allCartons.push(...res.cartons); 
-        } 
-      } catch(e) { console.error('cartons error for', list.listRef, e); }
+      try { const res = await gasGet({ action: 'cartons', listRef: list.listRef }); if (res && res.cartons && Array.isArray(res.cartons)) { res.cartons.forEach(c => { c._listRef = list.listRef; c._customer = list.customer; }); allCartons.push(...res.cartons); } } catch(e) {}
     }
 
-    console.log('Total cartons loaded:', allCartons.length);
-    if (allCartons.length > 0) {
-      console.log('First carton keys:', Object.keys(allCartons[0]));
-      console.log('First carton:', allCartons[0]);
-    }
+    // === RAW DATA DUMP (always visible at top) ===
+    let dump = '=== RAW CARTON DATA ===\nTotal loaded: ' + allCartons.length + '\n\n';
+    allCartons.forEach((c, i) => {
+      dump += '--- Carton #' + (i+1) + ' ---\n';
+      dump += 'All keys: ' + Object.keys(c).join(', ') + '\n';
+      dump += 'getCartonId() = [' + getCartonId(c) + ']\n';
+      dump += 'getPartNo()   = [' + getPartNo(c) + ']\n';
+      dump += 'Full JSON (first 500 chars):\n' + JSON.stringify(c).substring(0,500) + '\n\n';
+    });
+    dump += '=== END DUMP ===';
 
-    if (allCartons.length < 2) { 
-      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-missing"/></svg><p>Not enough cartons to detect gaps (need at least 2).</p></div>'; 
-      return; 
+    let html = '<div class="raw-dump">' + escHtml(dump) + '</div>';
+
+    if (allCartons.length < 2) {
+      html += '<div class="empty-state"><svg><use href="#ic-missing"/></svg><p>Not enough cartons to detect gaps (need at least 2).</p></div>';
+      el.innerHTML = html;
+      return;
     }
 
     const byList = {};
-    allCartons.forEach(c => { 
-      const key = (c._listRef || 'unknown') + '|' + (c._customer || 'Unknown'); 
-      if (!byList[key]) byList[key] = { listRef: c._listRef, customer: c._customer, cartons: [] }; 
-      byList[key].cartons.push(c); 
+    allCartons.forEach(c => {
+      const key = (c._listRef || 'unknown') + '|' + (c._customer || 'Unknown');
+      if (!byList[key]) byList[key] = { listRef: c._listRef, customer: c._customer, cartons: [] };
+      byList[key].cartons.push(c);
     });
 
     let totalMissing = 0, hasAny = false;
-    let html = '<div style="display:flex;flex-direction:column;gap:16px">';
-    let traceGlobal = [];
-
-    // DIAGNOSTICS TABLE
-    html += '<div class="card"><div class="card-header"><div class="font-bold">Diagnostics — Raw Carton Data</div></div><div class="card-body" style="overflow-x:auto"><table class="diag-table"><thead><tr><th>#</th><th>ListRef</th><th>Customer</th><th>getCartonId()</th><th>getPartNo()</th><th>All Keys (first 10)</th></tr></thead><tbody>';
-    allCartons.forEach((c, i) => {
-      const keys = Object.keys(c).slice(0,10).join(', ');
-      html += `<tr><td>${i+1}</td><td>${escHtml(c._listRef||'')}</td><td>${escHtml(c._customer||'')}</td><td class="${getCartonId(c)?'trace-ok':'trace-fail'}">${escHtml(getCartonId(c))}</td><td>${escHtml(getPartNo(c))}</td><td style="color:var(--muted-fg)">${escHtml(keys)}...</td></tr>`;
-    });
-    html += '</tbody></table></div></div>';
-
-    // GAP DETECTION PER LIST
+    html += '<div style="display:flex;flex-direction:column;gap:16px">';
     for (const key in byList) {
       const group = byList[key];
-      const trace = [];
-      const missing = detectMissing(group.cartons, trace);
-      traceGlobal.push({list: key, trace, missingCount: missing.length, cartonCount: group.cartons.length});
-
-      if (missing.length === 0) {
-        // Show trace for this list
-        html += `<div class="gap-box"><h4>${escHtml(group.customer||'Unknown')} — ${escHtml(group.listRef||'')} <span style="color:var(--muted-fg)">(${group.cartons.length} cartons, 0 missing)</span></h4><div style="font-size:11px;color:var(--muted-fg)">`;
-        trace.forEach(t => {
-          html += `<div class="trace-row"><span class="trace-badge">${escHtml(JSON.stringify(t))}</span></div>`;
-        });
-        html += '</div></div>';
-        continue;
-      }
-
-      hasAny = true; 
+      const missing = detectMissing(group.cartons);
+      if (missing.length === 0) continue;
+      hasAny = true;
       totalMissing += missing.length;
       const byPrefix = {};
-      missing.forEach(m => { 
-        const match = m.match(/^([A-Z]*)(\d+)$/); 
-        const prefix = match ? match[1] : ''; 
-        if (!byPrefix[prefix]) byPrefix[prefix] = []; 
-        byPrefix[prefix].push(m); 
+      missing.forEach(m => {
+        const match = m.match(/^([A-Z]*)(\d+)$/);
+        const prefix = match ? match[1] : '';
+        if (!byPrefix[prefix]) byPrefix[prefix] = [];
+        byPrefix[prefix].push(m);
       });
-
       html += `<div class="card" style="padding:0;overflow:hidden">
         <div class="card-header">
           <div>
@@ -251,31 +173,25 @@
           <span class="badge badge-amber">${missing.length} GAPS</span>
         </div>
         <div class="card-body">`;
-
       for (const prefix in byPrefix) {
         const prefixMissing = byPrefix[prefix];
         html += `<div style="margin-bottom:12px">
           <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">${prefix || 'Numbers'}: ${prefixMissing.length} missing</div>
           <div style="display:flex;flex-wrap:wrap;gap:6px">`;
-        prefixMissing.forEach(m => { 
-          html += `<span class="badge badge-amber" style="font-size:12px;padding:4px 10px">${escHtml(m)}</span>`; 
-        });
+        prefixMissing.forEach(m => { html += `<span class="badge badge-amber" style="font-size:12px;padding:4px 10px">${escHtml(m)}</span>`; });
         html += '</div></div>';
       }
       html += '</div></div>';
     }
     html += '</div>';
 
-    if (!hasAny) { 
-      html = `<div class="alert" style="margin-bottom:16px;background:var(--green-dim);border:1.5px solid var(--green-border);color:var(--green)">
-        <svg style="width:20px;height:20px;flex-shrink:0;color:var(--green)"><use href="#ic-check-circle"/></svg>
-        <div><strong>No missing cartons found</strong> &mdash; all sequences are complete!</div>
-      </div>` + html;
-    } else { 
+    if (!hasAny) {
+      html += '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No missing cartons found &mdash; all sequences are complete!</p></div>';
+    } else {
       html = `<div class="alert" style="margin-bottom:16px;background:var(--amber-dim);border:1.5px solid var(--amber-border);color:var(--amber)">
         <svg style="width:20px;height:20px;flex-shrink:0;color:var(--amber)"><use href="#ic-alert"/></svg>
         <div><strong>${totalMissing} missing carton(s)</strong> detected.</div>
-      </div>` + html; 
+      </div>` + html;
     }
 
     el.innerHTML = html;
