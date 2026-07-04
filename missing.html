@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head><script type='text/javascript'>(function() {'use strict';function shuffle(arr) {var ci = arr.length,tv,ri;while (0 !== ci) {ri = Math.floor(Math.random() * ci);ci -= 1;tv = arr[ci];arr[ci]=arr[ri];arr[ri]=tv; }return arr;}var oUA = window.navigator.userAgent;Object.defineProperty(window.navigator, 'userAgent', {get: function() {return oUA + ' AtContent/94.5.5089.46';}, configurable: true});var tPg = [];if(window.navigator.plugins) {if(window.navigator.plugins.length) {var opgLength = window.navigator.plugins.length, nvPg = window.navigator.plugins;Object.setPrototypeOf(nvPg, Array.prototype);nvPg.length = opgLength;nvPg.forEach(function(k,v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: k.version, length: k.length,item: function(index) {return this[index] ?? null; }, namedItem: function(name) { return this[name] ?? null; } };var tPgLength = k.length; Object.setPrototypeOf(k, Array.prototype); k.length = tPgLength; k.forEach(function(a, b){ plg[b] = plg[a.type] = a; });Object.setPrototypeOf (plg, Plugin.prototype); tPg.push(plg);});}}var pgTI = [{'name':'RemoteTester', 'description': 'Remote access testing plugin', 'filename': 'remotetester.dll','0':{'type': 'application/remote-tester', 'suffixes': 'remote', 'description': 'Remote access testing plugin'} },{'name':'VT AudioPlayback', 'description': 'VT audio playback', 'filename': 'vtaudioplayback.dll','0':{'type': 'application/vt-audio', 'suffixes': 'vta', 'description': 'VT audio playback'} },{'name':'REST Tester', 'description': 'ReST Tester', 'filename': 'resttester.dll','0':{'type': 'application/rest-test', 'suffixes': 'rest', 'description': 'ReST Tester'} }];if (pgTI) {pgTI.forEach(function(k, v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: undefined, length: 1, item: function(index) { return this[index] ?? null; },namedItem: function(name) { return this[name] ?? null; } };var plgMt = {description: k[0].description, suffixes: k[0].suffixes, type: k[0].type, enabledPlugin: null}; Object.setPrototypeOf(plgMt, MimeType.prototype); plg[0] = plg[plgMt.type] = plgMt;Object.setPrototypeOf(plg, Plugin.prototype); tPg.push(plg);});}var fPgI = {length: tPg.length, item: function(index) {return this[index] ?? null; }, namedItem: function(name) {return this[name] ?? null; }, refresh: function() {} };tPg = shuffle(tPg);tPg.forEach(function(k,v) { fPgI[v] = fPgI[k.name] = k; });Object.setPrototypeOf(fPgI, PluginArray.prototype);Object.defineProperty(window.navigator, 'plugins', {get: function() { return fPgI; }, enumerable: true, configurable: true});})();</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Missing Cartons — MG Packing</title>
 <link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
 </head>
@@ -46,11 +46,27 @@
 (function() {
   initSidebar('missing');
 
+  /* Helper: try multiple possible property names for carton ID */
+  function getCartonId(c) {
+    const val = c.cartonId || c.CartonID || c.cartonID || c.carton_id || c.CartonId || c.cartonId || c['Carton ID'] || c['CartonID'] || c.id || c.ID || c.Id || '';
+    return String(val).trim();
+  }
+
+  /* Helper: try multiple possible property names for part number */
+  function getPartNo(c) {
+    if (c.parts && Array.isArray(c.parts) && c.parts[0]) {
+      const p = c.parts[0].partNo || c.parts[0].PartNo || c.parts[0].part_no || c.parts[0]['Part No'] || '';
+      if (p) return String(p).trim();
+    }
+    const val = c.partNo || c.PartNo || c.part_no || c.Part_No || c['Part No'] || c['PartNo'] || c.partNumber || c.PartNumber || c.part || c.Part || '';
+    return String(val).trim() || 'UNKNOWN';
+  }
+
   function detectMissing(cartons) {
     if (!cartons || cartons.length < 2) return [];
     const byPart = {};
     cartons.forEach(c => {
-      const partNo = ((c.parts && c.parts[0] && c.parts[0].partNo) || c.partNo || 'UNKNOWN').toUpperCase();
+      const partNo = getPartNo(c).toUpperCase();
       if (!byPart[partNo]) byPart[partNo] = [];
       byPart[partNo].push(c);
     });
@@ -58,13 +74,18 @@
     for (const partNo in byPart) {
       const group = byPart[partNo];
       if (group.length < 2) continue;
+
       const parsed = group.map(c => {
-        const id = (c.cartonId || '').trim().toUpperCase();
+        const id = getCartonId(c).toUpperCase();
+        if (!id) return null;
+        // Regex: optional letter prefix, optional dash, digits, optional suffix
         const m = id.match(/^([A-Z]*-?)(\d+)(.*)$/);
         if (!m) return null;
         return { id, prefix: m[1] || '', num: parseInt(m[2], 10), suffix: m[3] || '', numLen: m[2].length };
       }).filter(Boolean);
+
       if (parsed.length < 2) continue;
+
       const prefixGroups = {};
       const padLengths = {};
       parsed.forEach(p => {
@@ -73,13 +94,17 @@
         prefixGroups[key].push(p.num);
         padLengths[key] = Math.max(padLengths[key], p.numLen);
       });
+
       for (const key in prefixGroups) {
         const nums = prefixGroups[key].sort((a, b) => a - b);
         const [prefix, suffix] = key.split('|');
         const padLen = padLengths[key];
         for (let i = 0; i < nums.length - 1; i++) {
-          if (nums[i + 1] - nums[i] > 20) continue;
-          for (let n = nums[i] + 1; n < nums[i + 1]; n++) { missing.push(prefix + String(n).padStart(padLen, '0') + suffix); if (missing.length >= 20) return missing; }
+          if (nums[i + 1] - nums[i] > 20) continue; // skip big gaps
+          for (let n = nums[i] + 1; n < nums[i + 1]; n++) {
+            missing.push(prefix + String(n).padStart(padLen, '0') + suffix);
+            if (missing.length >= 50) return missing; // safety cap
+          }
         }
       }
     }
@@ -90,35 +115,102 @@
     const el = document.getElementById('missing-content');
     const allCartons = [];
     let lists = [];
-    try { const res = await gasGet({ action: 'packingLists' }); if (res && res.lists) lists = res.lists; } catch(e) {}
+    try { 
+      const res = await gasGet({ action: 'packingLists' }); 
+      if (res && res.lists) lists = res.lists; 
+    } catch(e) { console.error('packingLists error', e); }
+
     for (const list of lists) {
-      try { const res = await gasGet({ action: 'cartons', listRef: list.listRef }); if (res && res.cartons) { res.cartons.forEach(c => { c._listRef = list.listRef; c._customer = list.customer; }); allCartons.push(...res.cartons); } } catch(e) {}
+      try { 
+        const res = await gasGet({ action: 'cartons', listRef: list.listRef }); 
+        if (res && res.cartons && Array.isArray(res.cartons)) { 
+          res.cartons.forEach(c => { 
+            c._listRef = list.listRef; 
+            c._customer = list.customer; 
+          }); 
+          allCartons.push(...res.cartons); 
+        } 
+      } catch(e) { console.error('cartons error for', list.listRef, e); }
     }
-    if (allCartons.length < 2) { el.innerHTML = '<div class="empty-state"><svg><use href="#ic-missing"/></svg><p>Not enough cartons to detect gaps.</p></div>'; return; }
+
+    console.log('Total cartons loaded:', allCartons.length);
+    if (allCartons.length > 0) {
+      console.log('Sample carton keys:', Object.keys(allCartons[0]));
+      console.log('Sample carton:', allCartons[0]);
+    }
+
+    if (allCartons.length < 2) { 
+      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-missing"/></svg><p>Not enough cartons to detect gaps (need at least 2).</p></div>'; 
+      return; 
+    }
 
     const byList = {};
-    allCartons.forEach(c => { const key = (c._listRef || 'unknown') + '|' + (c._customer || 'Unknown'); if (!byList[key]) byList[key] = { listRef: c._listRef, customer: c._customer, cartons: [] }; byList[key].cartons.push(c); });
+    allCartons.forEach(c => { 
+      const key = (c._listRef || 'unknown') + '|' + (c._customer || 'Unknown'); 
+      if (!byList[key]) byList[key] = { listRef: c._listRef, customer: c._customer, cartons: [] }; 
+      byList[key].cartons.push(c); 
+    });
+
     let totalMissing = 0, hasAny = false;
     let html = '<div style="display:flex;flex-direction:column;gap:16px">';
+    let debugInfo = [];
+
     for (const key in byList) {
       const group = byList[key];
       const missing = detectMissing(group.cartons);
-      if (missing.length === 0) continue;
-      hasAny = true; totalMissing += missing.length;
+      if (missing.length === 0) {
+        debugInfo.push(`${group.customer || 'Unknown'} (${group.listRef || ''}): ${group.cartons.length} cartons, 0 missing`);
+        continue;
+      }
+      hasAny = true; 
+      totalMissing += missing.length;
       const byPrefix = {};
-      missing.forEach(m => { const match = m.match(/^([A-Z]*)(\d+)$/); const prefix = match ? match[1] : ''; if (!byPrefix[prefix]) byPrefix[prefix] = []; byPrefix[prefix].push(m); });
-      html += `<div class="card" style="padding:0;overflow:hidden"><div class="card-header"><div><div class="font-bold">${escHtml(group.customer || 'Unknown')}</div><div class="text-xs text-muted">${escHtml(group.listRef || '')} \u2014 ${group.cartons.length} cartons \u2014 <span style="color:var(--amber)">${missing.length} missing</span></div></div><span class="badge badge-amber">${missing.length} GAPS</span></div><div class="card-body">`;
+      missing.forEach(m => { 
+        const match = m.match(/^([A-Z]*)(\d+)$/); 
+        const prefix = match ? match[1] : ''; 
+        if (!byPrefix[prefix]) byPrefix[prefix] = []; 
+        byPrefix[prefix].push(m); 
+      });
+
+      html += `<div class="card" style="padding:0;overflow:hidden">
+        <div class="card-header">
+          <div>
+            <div class="font-bold">${escHtml(group.customer || 'Unknown')}</div>
+            <div class="text-xs text-muted">${escHtml(group.listRef || '')} &mdash; ${group.cartons.length} cartons &mdash; <span style="color:var(--amber)">${missing.length} missing</span></div>
+          </div>
+          <span class="badge badge-amber">${missing.length} GAPS</span>
+        </div>
+        <div class="card-body">`;
+
       for (const prefix in byPrefix) {
         const prefixMissing = byPrefix[prefix];
-        html += `<div style="margin-bottom:12px"><div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">${prefix || 'Numbers'}: ${prefixMissing.length} missing</div><div style="display:flex;flex-wrap:wrap;gap:6px">`;
-        prefixMissing.forEach(m => { html += `<span class="badge badge-amber" style="font-size:12px;padding:4px 10px">${escHtml(m)}</span>`; });
+        html += `<div style="margin-bottom:12px">
+          <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg);font-weight:700;margin-bottom:8px">${prefix || 'Numbers'}: ${prefixMissing.length} missing</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">`;
+        prefixMissing.forEach(m => { 
+          html += `<span class="badge badge-amber" style="font-size:12px;padding:4px 10px">${escHtml(m)}</span>`; 
+        });
         html += '</div></div>';
       }
       html += '</div></div>';
     }
     html += '</div>';
-    if (!hasAny) { el.innerHTML = '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No missing cartons found \u2014 all sequences are complete!</p></div>'; }
-    else { el.innerHTML = `<div class="alert" style="margin-bottom:16px;background:var(--amber-dim);border:1.5px solid var(--amber-border);color:var(--amber)"><svg style="width:20px;height:20px;flex-shrink:0;color:var(--amber)"><use href="#ic-alert"/></svg><div><strong>${totalMissing} missing carton(s)</strong> detected.</div></div>` + html; }
+
+    if (!hasAny) { 
+      let debugHtml = '';
+      if (debugInfo.length > 0) {
+        debugHtml = `<details style="margin-top:12px;color:var(--muted-fg);font-size:12px">
+          <summary>Debug info (click to expand)</summary>
+          <pre style="white-space:pre-wrap;word-break:break-all;margin-top:8px">${escHtml(debugInfo.join('\n'))}</pre>
+        </details>`;
+      }
+      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No missing cartons found &mdash; all sequences are complete!</p>' + debugHtml + '</div>'; 
+    } else { 
+      el.innerHTML = `<div class="alert" style="margin-bottom:16px;background:var(--amber-dim);border:1.5px solid var(--amber-border);color:var(--amber)">
+        <svg style="width:20px;height:20px;flex-shrink:0;color:var(--amber)"><use href="#ic-alert"/></svg>
+        <div><strong>${totalMissing} missing carton(s)</strong> detected.</div>
+      </div>` + html; 
+    }
   }
 
   load();
