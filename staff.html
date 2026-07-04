@@ -629,17 +629,30 @@ function initSidebar(currentPage) {
     }
   }
 
-  async function loadEditMode(pe) {
+    async function loadEditMode(pe) {
     editMode = true;
     editOriginalListRef = staffSelectedList ? staffSelectedList.listRef : '';
-    editCartonRows = pe.row ? [pe.row] : [];
+    // FIX 1: Read exact row numbers from reject.html (gasRows/logRows/row)
+    editCartonRows = (pe.gasRows || pe.logRows || (pe.row ? [pe.row] : [])).map(Number).filter(Boolean);
     formState.cartonId = pe.cartonId || '';
     try { toast('Loading carton data for editing...', 'success'); } catch(e) {}
     try {
-      const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
-      if (res && res.cartons && res.cartons.length > 0) {
-        const rows = res.cartons; // one row per part now
-        editCartonRows = rows.map(c => c.row).filter(Boolean);
+      // FIX 2: Load ONLY the exact rejected rows via batchRecords
+      let rows = [];
+      if (editCartonRows.length > 0) {
+        const res = await gasGet({ action: 'batchRecords', rows: editCartonRows.join(',') });
+        if (res && res.records) rows = res.records;
+      }
+      
+      // Fallback only if batchRecords failed
+      if (rows.length === 0 && pe.cartonId) {
+        const res = await gasGet({ action: 'getCartonById', cartonId: pe.cartonId });
+        if (res && res.cartons) rows = res.cartons;
+        // DO NOT overwrite editCartonRows here!
+      }
+      
+      if (rows.length > 0) {
+        // FIX 3: editCartonRows is NEVER overwritten — stays as original rejected rows
         const first = rows[0];
         editCartonRef = first.cartonRef || '';
         formState.cartonId = first.cartonId || pe.cartonId || '';
@@ -683,9 +696,9 @@ function initSidebar(currentPage) {
         });
         if (formState.parts.length === 0) addPart();
 
-        try { toast('Carton loaded \u2014 review and resubmit', 'success'); } catch(e) {}
+        try { toast('Carton loaded — review and resubmit', 'success'); } catch(e) {}
       } else {
-        try { toast('Could not load carton data \u2014 starting fresh', 'error'); } catch(e) {}
+        try { toast('Could not load carton data — starting fresh', 'error'); } catch(e) {}
         editMode = false;
       }
     } catch(e) {
