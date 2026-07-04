@@ -115,21 +115,24 @@
   }
 
   window.approveTransfer = async function(transferRow) {
-    if (isSubmitting) return;
-    isSubmitting = true;
-    setButtonLoading('btn-approve-' + transferRow, true);
-    const manager = prompt('ENTER MANAGER NAME TO APPROVE:');
-    if (!manager) { isSubmitting = false; setButtonLoading('btn-approve-' + transferRow, false); return; }
-    const transferData = transferDataMap[transferRow];
-    const cartonRows = transferData ? (transferData.cartons || []).map(c => c.row).filter(Boolean) : [];
-    const cartonIds = transferData ? (transferData.cartons || []).map(c => c.cartonId).filter(Boolean) : [];
-    const toListRef = transferData ? transferData.toListRef : '';
-    try {
-      const res = await gasPost({ action: 'approveTransfer', transferRow, manager: manager.toUpperCase(), cartonRows, cartonIds, toListRef });
-      if (res && res.success) { toast('Transfer approved. New list: ' + (res.toListRef || toListRef), 'success'); try { await gasPost({ action: 'resetTransferStatus', cartonRows: cartonRows || [], cartonIds: cartonIds || [] }); } catch(e) {} isSubmitting = false; loadTransfer(); }
-      else { throw new Error(res?.error || 'Unknown error'); }
-    } catch(e) { isSubmitting = false; setButtonLoading('btn-approve-' + transferRow, false); toast('Approve failed: ' + e.message, 'error'); }
-  };
+  if (isSubmitting) return;
+  isSubmitting = true;
+  setButtonLoading('btn-approve-' + transferRow, true);
+  const manager = prompt('ENTER MANAGER NAME TO APPROVE:');
+  if (!manager) { isSubmitting = false; setButtonLoading('btn-approve-' + transferRow, false); return; }
+  const transferData = transferDataMap[transferRow];
+  const toListRef = transferData ? transferData.toListRef : '';
+  try {
+    const res = await gasPost({ action: 'approveTransfer', transferRow, manager: manager.toUpperCase(), toListRef });
+    if (res && res.success) {
+      toast('Transfer approved. New list: ' + (res.toListRef || toListRef), 'success');
+      isSubmitting = false;
+      loadTransfer();
+    } else {
+      throw new Error(res?.error || 'Unknown error');
+    }
+  } catch(e) { isSubmitting = false; setButtonLoading('btn-approve-' + transferRow, false); toast('Approve failed: ' + e.message, 'error'); }
+};
 
   window.rejectTransfer = async function(transferRow) {
     if (isSubmitting) return;
