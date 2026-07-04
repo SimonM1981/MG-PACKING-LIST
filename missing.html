@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Missing Cartons — MG Packing</title>
-<link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
+<link rel="stylesheet" href="shared.css">
+<script src="shared.js"></script>
 </head>
 <body>
 <div id="app">
@@ -46,65 +49,53 @@
 (function() {
   initSidebar('missing');
 
-  /* Helper: try multiple possible property names for carton ID */
   function getCartonId(c) {
-    const val = c.cartonId || c.CartonID || c.cartonID || c.carton_id || c.CartonId || c.cartonId || c['Carton ID'] || c['CartonID'] || c.id || c.ID || c.Id || '';
-    return String(val).trim();
-  }
-
-  /* Helper: try multiple possible property names for part number */
-  function getPartNo(c) {
-    if (c.parts && Array.isArray(c.parts) && c.parts[0]) {
-      const p = c.parts[0].partNo || c.parts[0].PartNo || c.parts[0].part_no || c.parts[0]['Part No'] || '';
-      if (p) return String(p).trim();
-    }
-    const val = c.partNo || c.PartNo || c.part_no || c.Part_No || c['Part No'] || c['PartNo'] || c.partNumber || c.PartNumber || c.part || c.Part || '';
-    return String(val).trim() || 'UNKNOWN';
+    return String(c.cartonId || c.CartonID || c.cartonID || c.id || c.ID || '').trim();
   }
 
   function detectMissing(cartons) {
     if (!cartons || cartons.length < 2) return [];
-    const byPart = {};
-    cartons.forEach(c => {
-      const partNo = getPartNo(c).toUpperCase();
-      if (!byPart[partNo]) byPart[partNo] = [];
-      byPart[partNo].push(c);
+    
+    // Deduplicate by cartonId — multi-part/kit cartons appear as multiple rows
+    const seen = {};
+    const unique = cartons.filter(c => {
+      const id = getCartonId(c);
+      if (!id || seen[id]) return false;
+      seen[id] = true;
+      return true;
     });
+    
+    if (unique.length < 2) return [];
+    
+    const parsed = unique.map(c => {
+      const id = getCartonId(c).toUpperCase();
+      if (!id) return null;
+      const m = id.match(/^([A-Z]*-?)(\d+)(.*)$/);
+      if (!m) return null;
+      return { id, prefix: m[1] || '', num: parseInt(m[2], 10), suffix: m[3] || '', numLen: m[2].length };
+    }).filter(Boolean);
+    
+    if (parsed.length < 2) return [];
+    
+    const prefixGroups = {};
+    const padLengths = {};
+    parsed.forEach(p => {
+      const key = p.prefix + '|' + p.suffix;
+      if (!prefixGroups[key]) { prefixGroups[key] = []; padLengths[key] = 0; }
+      prefixGroups[key].push(p.num);
+      padLengths[key] = Math.max(padLengths[key], p.numLen);
+    });
+    
     const missing = [];
-    for (const partNo in byPart) {
-      const group = byPart[partNo];
-      if (group.length < 2) continue;
-
-      const parsed = group.map(c => {
-        const id = getCartonId(c).toUpperCase();
-        if (!id) return null;
-        // Regex: optional letter prefix, optional dash, digits, optional suffix
-        const m = id.match(/^([A-Z]*-?)(\d+)(.*)$/);
-        if (!m) return null;
-        return { id, prefix: m[1] || '', num: parseInt(m[2], 10), suffix: m[3] || '', numLen: m[2].length };
-      }).filter(Boolean);
-
-      if (parsed.length < 2) continue;
-
-      const prefixGroups = {};
-      const padLengths = {};
-      parsed.forEach(p => {
-        const key = p.prefix + '|' + p.suffix;
-        if (!prefixGroups[key]) { prefixGroups[key] = []; padLengths[key] = 0; }
-        prefixGroups[key].push(p.num);
-        padLengths[key] = Math.max(padLengths[key], p.numLen);
-      });
-
-      for (const key in prefixGroups) {
-        const nums = prefixGroups[key].sort((a, b) => a - b);
-        const [prefix, suffix] = key.split('|');
-        const padLen = padLengths[key];
-        for (let i = 0; i < nums.length - 1; i++) {
-          if (nums[i + 1] - nums[i] > 20) continue; // skip big gaps
-          for (let n = nums[i] + 1; n < nums[i + 1]; n++) {
-            missing.push(prefix + String(n).padStart(padLen, '0') + suffix);
-            if (missing.length >= 50) return missing; // safety cap
-          }
+    for (const key in prefixGroups) {
+      const nums = prefixGroups[key].sort((a, b) => a - b);
+      const [prefix, suffix] = key.split('|');
+      const padLen = padLengths[key];
+      for (let i = 0; i < nums.length - 1; i++) {
+        if (nums[i + 1] - nums[i] > 20) continue;
+        for (let n = nums[i] + 1; n < nums[i + 1]; n++) {
+          missing.push(prefix + String(n).padStart(padLen, '0') + suffix);
+          if (missing.length >= 100) return missing;
         }
       }
     }
@@ -118,8 +109,8 @@
     try { 
       const res = await gasGet({ action: 'packingLists' }); 
       if (res && res.lists) lists = res.lists; 
-    } catch(e) { console.error('packingLists error', e); }
-
+    } catch(e) {}
+    
     for (const list of lists) {
       try { 
         const res = await gasGet({ action: 'cartons', listRef: list.listRef }); 
@@ -130,40 +121,31 @@
           }); 
           allCartons.push(...res.cartons); 
         } 
-      } catch(e) { console.error('cartons error for', list.listRef, e); }
+      } catch(e) {}
     }
-
-    console.log('Total cartons loaded:', allCartons.length);
-    if (allCartons.length > 0) {
-      console.log('Sample carton keys:', Object.keys(allCartons[0]));
-      console.log('Sample carton:', allCartons[0]);
-    }
-
+    
     if (allCartons.length < 2) { 
-      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-missing"/></svg><p>Not enough cartons to detect gaps (need at least 2).</p></div>'; 
+      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-missing"/></svg><p>Not enough cartons to detect gaps.</p></div>'; 
       return; 
     }
-
+    
     const byList = {};
     allCartons.forEach(c => { 
       const key = (c._listRef || 'unknown') + '|' + (c._customer || 'Unknown'); 
       if (!byList[key]) byList[key] = { listRef: c._listRef, customer: c._customer, cartons: [] }; 
       byList[key].cartons.push(c); 
     });
-
+    
     let totalMissing = 0, hasAny = false;
     let html = '<div style="display:flex;flex-direction:column;gap:16px">';
-    let debugInfo = [];
-
+    
     for (const key in byList) {
       const group = byList[key];
       const missing = detectMissing(group.cartons);
-      if (missing.length === 0) {
-        debugInfo.push(`${group.customer || 'Unknown'} (${group.listRef || ''}): ${group.cartons.length} cartons, 0 missing`);
-        continue;
-      }
+      if (missing.length === 0) continue;
       hasAny = true; 
       totalMissing += missing.length;
+      
       const byPrefix = {};
       missing.forEach(m => { 
         const match = m.match(/^([A-Z]*)(\d+)$/); 
@@ -171,17 +153,17 @@
         if (!byPrefix[prefix]) byPrefix[prefix] = []; 
         byPrefix[prefix].push(m); 
       });
-
+      
       html += `<div class="card" style="padding:0;overflow:hidden">
         <div class="card-header">
           <div>
             <div class="font-bold">${escHtml(group.customer || 'Unknown')}</div>
-            <div class="text-xs text-muted">${escHtml(group.listRef || '')} &mdash; ${group.cartons.length} cartons &mdash; <span style="color:var(--amber)">${missing.length} missing</span></div>
+            <div class="text-xs text-muted">${escHtml(group.listRef || '')} &mdash; ${group.cartons.length} rows &mdash; <span style="color:var(--amber)">${missing.length} missing</span></div>
           </div>
           <span class="badge badge-amber">${missing.length} GAPS</span>
         </div>
         <div class="card-body">`;
-
+      
       for (const prefix in byPrefix) {
         const prefixMissing = byPrefix[prefix];
         html += `<div style="margin-bottom:12px">
@@ -195,16 +177,9 @@
       html += '</div></div>';
     }
     html += '</div>';
-
+    
     if (!hasAny) { 
-      let debugHtml = '';
-      if (debugInfo.length > 0) {
-        debugHtml = `<details style="margin-top:12px;color:var(--muted-fg);font-size:12px">
-          <summary>Debug info (click to expand)</summary>
-          <pre style="white-space:pre-wrap;word-break:break-all;margin-top:8px">${escHtml(debugInfo.join('\n'))}</pre>
-        </details>`;
-      }
-      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No missing cartons found &mdash; all sequences are complete!</p>' + debugHtml + '</div>'; 
+      el.innerHTML = '<div class="empty-state"><svg><use href="#ic-check-circle"/></svg><p>No missing cartons found &mdash; all sequences are complete!</p></div>'; 
     } else { 
       el.innerHTML = `<div class="alert" style="margin-bottom:16px;background:var(--amber-dim);border:1.5px solid var(--amber-border);color:var(--amber)">
         <svg style="width:20px;height:20px;flex-shrink:0;color:var(--amber)"><use href="#ic-alert"/></svg>
