@@ -79,7 +79,7 @@
       const totalQty = grecs.reduce((s, r) => s + (parseInt(r.qty) || 0), 0);
       const escCartonId = escHtml(first.cartonId || '');
       const escCustomer = escHtml(first.customer || '');
-      const escListRef = escHtml(first.listRef || first.packingList || '');
+      const escListRef = escHtml((first.listRef || first.packingList || '').trim());
 
       html += `<div class="record-card rejected" style="border-left:4px solid var(--danger)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -110,8 +110,15 @@
   }
 
   window.editCarton = async function(cartonId, customer, rowNums, listRef) {
+    // Trim listRef to prevent space mismatch
+    const cleanListRef = (listRef || '').trim();
+    if (!cleanListRef) {
+      toast('Packing list reference is missing — cannot edit.', 'error');
+      return;
+    }
+
     // If listRef not provided, fallback to search by customer
-    if (!listRef) {
+    if (!cleanListRef) {
       let lists = [];
       try { const res = await gasGet({ action: 'packingLists' }); if (res && res.lists) lists = res.lists; } catch(e) {}
       const customerLower = (customer || '').toLowerCase();
@@ -120,12 +127,16 @@
       if (!foundList) { toast('Packing list not found for: ' + customer, 'error'); return; }
       listRef = foundList.listRef;
     }
+
+    const rowsArr = rowNums.split(',').map(Number).filter(Boolean);
+
     toast('Opening packing list...', 'success');
     localStorage.setItem('mg_pending_edit', JSON.stringify({
-      listRef: listRef,
+      listRef: cleanListRef,
       cartonId: cartonId,
-      logRows: rowNums.split(',').map(Number).filter(Boolean),
-      gasRows: rowNums.split(',').map(Number).filter(Boolean)
+      row: rowsArr[0] || null,                // backward compat for staff.html
+      logRows: rowsArr,
+      gasRows: rowsArr
     }));
     goTo('staff');
   };
