@@ -88,10 +88,6 @@ nav a.danger{color:var(--danger)}
 .list-card-ref{font-family:var(--font-mono);font-size:16px;font-weight:800;color:var(--primary)}
 .list-card-meta{font-size:12px;color:var(--muted-fg);line-height:1.6}
 .list-card-meta strong{color:var(--text);font-weight:600}
-.list-card-stats{display:flex;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
-.list-card-stat{text-align:center}
-.list-card-stat .num{font-size:18px;font-weight:700;color:var(--text);display:block}
-.list-card-stat .lbl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-fg);margin-top:2px}
 
 /* Button */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:none;transition:all .15s;cursor:pointer;touch-action:manipulation;min-height:36px;background:var(--primary);color:#fff}
@@ -353,11 +349,7 @@ function renderLists(tab) {
         <div><strong>Customer:</strong> ${escHtml(list.customer || '')}</div>
         <div><strong>Created By:</strong> ${escHtml(list.createdBy || '')}</div>
         <div><strong>Team:</strong> ${escHtml(list.team || '')}</div>
-        <div><strong>Date:</strong> ${fmtDate(list.timestamp)}</div>
-      </div>
-      <div class="list-card-stats">
-        <div class="list-card-stat"><span class="num">${list.cartonCount || 0}</span><span class="lbl">Cartons</span></div>
-        <div class="list-card-stat"><span class="num">${list.partCount || 0}</span><span class="lbl">Parts</span></div>
+        <div><strong>Date:</strong> ${fmtDate(list.createdAt)}</div>
       </div>
     </a>`;
   }
