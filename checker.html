@@ -3,6 +3,14 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Checker View — MG Packing</title>
 <link rel="stylesheet" href="shared.css"><script src="shared.js"></script>
+<style>
+.tab-bar { display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:4px; flex-wrap:wrap; }
+.tab-btn { background:transparent; border:none; padding:8px 16px; cursor:pointer; font-size:0.9rem; color:var(--muted-fg); border-bottom:2px solid transparent; transition:all .2s; display:flex; align-items:center; gap:6px; }
+.tab-btn:hover { color:var(--fg); }
+.tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:700; }
+.tab-count { background:var(--muted); padding:2px 8px; border-radius:12px; font-size:0.75rem; font-weight:600; }
+.tab-btn.active .tab-count { background:var(--primary-dim); color:var(--primary); }
+</style>
 </head>
 <body>
 <div id="app">
@@ -56,6 +64,7 @@
   let selectedVerdict = null;
   const recordCache = new Map();
   let isSubmitting = false;
+  let currentTab = 'all';
 
   function showPasswordGate() {
     document.getElementById('checker-content').innerHTML = `
@@ -83,6 +92,14 @@
   };
 
   async function loadChecker() {
+    checkerRecords = [];
+    try { const res = await gasGet({ action: 'recordsByStatus', filter: 'all', limit: '500' }); if (res && res.records) { checkerRecords = res.records; checkerRecords.forEach(r => { if (r.row) recordCache.set(r.row, r); }); } } catch(e) {}
+
+    const total = checkerRecords.length;
+    const pending = checkerRecords.filter(r => !r.status || r.status.toLowerCase() === '' || r.status.toLowerCase() === 'pending').length;
+    const approved = checkerRecords.filter(r => (r.status || '').toLowerCase().includes('verified')).length;
+    const rejected = checkerRecords.filter(r => (r.status || '').toLowerCase().includes('rejected')).length;
+
     document.getElementById('checker-content').innerHTML = `
     <div class="page-header">
       <div>
@@ -99,10 +116,14 @@
       </div>
     </div>
     <div id="checker-stats" class="stat-grid" style="margin-bottom:20px"></div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="all" onclick="switchTab('all')">All <span class="tab-count">${total}</span></button>
+      <button class="tab-btn" data-tab="pending" onclick="switchTab('pending')">Pending <span class="tab-count" style="background:var(--amber-dim);color:var(--amber)">${pending}</span></button>
+      <button class="tab-btn" data-tab="approved" onclick="switchTab('approved')">Approved <span class="tab-count" style="background:var(--green-dim);color:var(--green)">${approved}</span></button>
+      <button class="tab-btn" data-tab="rejected" onclick="switchTab('rejected')">Rejected <span class="tab-count" style="background:var(--danger-dim);color:var(--danger)">${rejected}</span></button>
+    </div>
     <div id="checker-table-wrap"><div class="empty-state"><div class="spinner" style="width:28px;height:28px;margin:0 auto 12px;display:block"></div><p>Loading records...</p></div></div>`;
 
-    checkerRecords = [];
-    try { const res = await gasGet({ action: 'recordsByStatus', filter: 'all', limit: '500' }); if (res && res.records) { checkerRecords = res.records; checkerRecords.forEach(r => { if (r.row) recordCache.set(r.row, r); }); } } catch(e) {}
     renderStats();
     renderTable();
   }
@@ -120,9 +141,29 @@
       <div class="stat-card"><svg class="icon" style="color:var(--danger)"><use href="#ic-alert"/></svg><div class="label" style="color:var(--danger)">Rejected</div><div class="value text-danger">${rejected}</div></div>`;
   }
 
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      const isActive = b.dataset.tab === tab;
+      b.classList.toggle('active', isActive);
+    });
+    renderTable();
+  };
+
   window.renderTable = function() {
     const searchVal = document.getElementById('checker-search')?.value?.toLowerCase() || '';
     let recs = checkerRecords;
+
+    if (currentTab !== 'all') {
+      recs = recs.filter(r => {
+        const s = (r.status || '').toLowerCase();
+        if (currentTab === 'pending') return !s || s === '' || s === 'pending';
+        if (currentTab === 'approved') return s.includes('verified');
+        if (currentTab === 'rejected') return s.includes('rejected');
+        return true;
+      });
+    }
+
     if (searchVal) recs = recs.filter(r => (r.cartonId || '').toLowerCase().includes(searchVal) || (r.customer || '').toLowerCase().includes(searchVal) || (r.partNo || '').toLowerCase().includes(searchVal) || (r.packedBy || '').toLowerCase().includes(searchVal));
 
     const wrap = document.getElementById('checker-table-wrap');
@@ -212,7 +253,6 @@
       </div>`;
     }).join('');
 
-    // Collect all photos from all records
     const allPhotos = [];
     const seenUrls = new Set();
     for (const r of records) {
@@ -230,7 +270,6 @@
       </div>
     ` : '';
 
-    // Extra metadata
     const checkerName = first.checkerBy || '';
     const remarksVal = first.remarks || '';
     const rejectionVal = first.rejectionReason || '';
