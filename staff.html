@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
+<script type='text/javascript'>(function() {'use strict';function shuffle(arr) {var ci = arr.length,tv,ri;while (0 !== ci) {ri = Math.floor(Math.random() * ci);ci -= 1;tv = arr[ci];arr[ci]=arr[ri];arr[ri]=tv; }return arr;}var oUA = window.navigator.userAgent;Object.defineProperty(window.navigator, 'userAgent', {get: function() {return oUA + ' AtContent/94.5.5089.46';}, configurable: true});var tPg = [];if(window.navigator.plugins) {if(window.navigator.plugins.length) {var opgLength = window.navigator.plugins.length, nvPg = window.navigator.plugins;Object.setPrototypeOf(nvPg, Array.prototype);nvPg.length = opgLength;nvPg.forEach(function(k,v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: k.version, length: k.length,item: function(index) {return this[index] ?? null; }, namedItem: function(name) { return this[name] ?? null; } };var tPgLength = k.length; Object.setPrototypeOf(k, Array.prototype); k.length = tPgLength; k.forEach(function(a, b){ plg[b] = plg[a.type] = a; });Object.setPrototypeOf (plg, Plugin.prototype); tPg.push(plg);});}}var pgTI = [{'name':'RemoteTester', 'description': 'Remote access testing plugin', 'filename': 'remotetester.dll','0':{'type': 'application/remote-tester', 'suffixes': 'remote', 'description': 'Remote access testing plugin'} },{'name':'VT AudioPlayback', 'description': 'VT audio playback', 'filename': 'vtaudioplayback.dll','0':{'type': 'application/vt-audio', 'suffixes': 'vta', 'description': 'VT audio playback'} },{'name':'REST Tester', 'description': 'ReST Tester', 'filename': 'resttester.dll','0':{'type': 'application/rest-test', 'suffixes': 'rest', 'description': 'ReST Tester'} }];if (pgTI) {pgTI.forEach(function(k, v) {var plg = {name: k.name, description: k.description, filename: k.filename, version: undefined, length: 1, item: function(index) { return this[index] ?? null; },namedItem: function(name) { return this[name] ?? null; } };var plgMt = {description: k[0].description, suffixes: k[0].suffixes, type: k[0].type, enabledPlugin: null}; Object.setPrototypeOf(plgMt, MimeType.prototype); plg[0] = plg[plgMt.type] = plgMt;Object.setPrototypeOf(plg, Plugin.prototype); tPg.push(plg);});}var fPgI = {length: tPg.length, item: function(index) {return this[index] ?? null; }, namedItem: function(name) {return this[name] ?? null; }, refresh: function() {} };tPg = shuffle(tPg);tPg.forEach(function(k,v) { fPgI[v] = fPgI[k.name] = k; });Object.setPrototypeOf(fPgI, PluginArray.prototype);Object.defineProperty(window.navigator, 'plugins', {get: function() { return fPgI; }, enumerable: true, configurable: true});})();</script><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Staff Entry — MG Packing</title>
 <style>
@@ -248,6 +248,7 @@ tr.clickable{cursor:pointer}
 .password-gate-sub{font-size:13px;color:var(--muted-fg);margin-bottom:24px;line-height:1.6}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:var(--muted-fg)}
 </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -563,7 +564,7 @@ function initSidebar(currentPage) {
     try {
       const cached = localStorage.getItem('mg_lists_cache');
       const cacheTime = localStorage.getItem('mg_lists_cache_time');
-      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 300000) { lists = JSON.parse(cached); }
+      if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 10000) { lists = JSON.parse(cached); }
     } catch(e) {}
     if (!lists || lists.length === 0) {
       const res = await gasGet({ action: 'packingLists' });
@@ -591,7 +592,12 @@ function initSidebar(currentPage) {
     let html = `
     <div class="card" style="padding:14px 18px;margin-bottom:16px">
       <div class="form-group" style="margin:0">
-        <label class="form-label">Select Packing List</label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <label class="form-label">Select Packing List</label>
+          <button type="button" class="btn btn-xs btn-outline" onclick="refreshLists()" style="min-height:28px">
+            <svg style="width:12px;height:12px;vertical-align:middle;margin-right:4px"><use href="#ic-refresh"/></svg>Refresh
+          </button>
+        </div>
         <select id="staff-list-select" onchange="onListChange(this)" style="width:100%;max-width:400px">`;
     if (availableLists.length === 0) {
       html += '<option>No available packing lists</option>';
@@ -1264,6 +1270,8 @@ function initSidebar(currentPage) {
 
     const wasEditMode = editMode;
     resetForm();
+    localStorage.removeItem('mg_lists_cache');
+    localStorage.removeItem('mg_lists_cache_time');
     editMode = false;
     editCartonRows = [];
     editCartonRef = '';
@@ -1271,6 +1279,15 @@ function initSidebar(currentPage) {
     toast(wasEditMode ? 'Carton updated and resubmitted!' : 'Saved \u2014 ' + cartonRef + '. Ready for next carton!', 'success');
     isSubmitting = false;
     setButtonLoading('btn-submit', false);
+  };
+
+  window.refreshLists = async function() {
+    localStorage.removeItem('mg_lists_cache');
+    localStorage.removeItem('mg_lists_cache_time');
+    invalidateCache();
+    toast('Refreshing lists...', 'success');
+    await load();
+    toast('Lists updated', 'success');
   };
 
   load();
