@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Part Verify - Accurate</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<title>AI Part Verify - GitHub Test</title>
 <style>
   :root { --bg:#f0f2f5; --card:#fff; --primary:#4361ee; --success:#06d6a0; --danger:#ef476f; --warning:#ffd166; }
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -12,34 +11,40 @@
   h2 { text-align:center; margin-bottom:16px; font-size:1.2rem; }
   .card { background:var(--card); border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 2px 12px rgba(0,0,0,0.08); }
   label { font-size:0.75rem; font-weight:700; color:#666; text-transform:uppercase; letter-spacing:0.5px; display:block; margin-bottom:6px; }
-  input[type="text"] { width:100%; padding:14px; border:2px solid #e0e0e0; border-radius:12px; font-size:1.1rem; font-weight:700; text-transform:uppercase; }
+  input[type="text"], input[type="password"] { width:100%; padding:14px; border:2px solid #e0e0e0; border-radius:12px; font-size:1rem; font-weight:700; text-transform:uppercase; }
   .camera-box { position:relative; width:100%; aspect-ratio:4/3; background:#000; border-radius:12px; overflow:hidden; margin:10px 0; }
   video, #previewImg { width:100%; height:100%; object-fit:cover; }
   #previewImg { display:none; background:#111; object-fit:contain; }
-  .btn { width:100%; padding:14px; border:none; border-radius:12px; font-size:1rem; font-weight:700; cursor:pointer; margin-top:8px; }
+  .btn { width:100%; padding:14px; border:none; border-radius:12px; font-size:1rem; font-weight:700; cursor:pointer; margin-top:8px; transition:0.2s; }
+  .btn:active { transform:scale(0.98); }
   .btn-primary { background:var(--primary); color:#fff; }
   .btn-success { background:var(--success); color:#fff; }
   .btn-danger { background:var(--danger); color:#fff; }
   .btn-gray { background:#6c757d; color:#fff; }
-  .btn:disabled { opacity:0.5; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
   .btn-row { display:flex; gap:8px; }
   .btn-row .btn { flex:1; margin-top:0; }
   .result { margin-top:12px; padding:14px; border-radius:12px; text-align:center; font-weight:700; display:none; }
   .result.ok { background:rgba(6,214,160,0.15); color:#047857; border:2px solid var(--success); display:block; }
   .result.fail { background:rgba(239,71,111,0.15); color:#be123c; border:2px solid var(--danger); display:block; }
-  .result.warn { background:rgba(255,209,102,0.2); color:#b45309; border:2px solid var(--warning); display:block; }
-  .ocr-info { font-size:0.8rem; color:#666; margin-top:8px; font-family:monospace; background:#f5f5f5; padding:8px; border-radius:6px; display:none; }
-  .confidence { font-size:0.75rem; color:#888; margin-top:4px; }
+  .result.loading { background:rgba(67,97,238,0.1); color:var(--primary); border:2px solid var(--primary); display:block; }
+  .ocr-info { font-size:0.8rem; color:#555; margin-top:10px; font-family:monospace; background:#f5f5f5; padding:10px; border-radius:8px; display:none; line-height:1.5; }
+  .conf-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; margin-left:6px; }
+  .conf-high { background:rgba(6,214,160,0.2); color:#047857; }
+  .conf-low { background:rgba(239,71,111,0.2); color:#be123c; }
+  .hint { font-size:0.75rem; color:#888; text-align:center; margin-top:6px; }
+  .api-section { border-top:2px dashed #e0e0e0; padding-top:12px; margin-top:12px; }
   #fileInput { display:none; }
 </style>
 </head>
 <body>
 
-<h2>📷 Part Verify (Accurate)</h2>
+<h2>🤖 AI Part Verify</h2>
 
 <div class="card">
   <label>Part Number</label>
-  <input type="text" id="partInput" placeholder="e.g. 45535-09250">
+  <input type="text" id="partInput" placeholder="e.g. 45535-09250" autocomplete="off">
+  <div class="hint">Type or scan the part number first</div>
 </div>
 
 <div class="card">
@@ -59,11 +64,16 @@
   <button class="btn btn-gray" id="retakeBtn" style="display:none;" onclick="retake()">🔄 Retake</button>
   
   <div class="ocr-info" id="ocrInfo"></div>
-  <div class="confidence" id="confDisplay"></div>
+</div>
+
+<div class="card api-section">
+  <label>API Key (OCR.space)</label>
+  <input type="password" id="apiKey" placeholder="Paste your OCR.space API key" autocomplete="off">
+  <div class="hint">Get free key at ocr.space/ocrapi/freekey</div>
 </div>
 
 <div class="card">
-  <button class="btn btn-success" id="verifyBtn" onclick="verify()" disabled>✅ Verify</button>
+  <button class="btn btn-success" id="verifyBtn" onclick="verify()" disabled>✅ AI Verify</button>
   <div class="result" id="result"></div>
 </div>
 
@@ -75,22 +85,22 @@ const retakeBtn = document.getElementById('retakeBtn');
 const controls = document.getElementById('controls');
 const verifyBtn = document.getElementById('verifyBtn');
 const ocrInfo = document.getElementById('ocrInfo');
-const confDisplay = document.getElementById('confDisplay');
 const result = document.getElementById('result');
 
 let stream = null;
 let capturedImage = null;
-let worker = null;
-let lastConfidence = 0;
-
-(async function init() {
-  worker = await Tesseract.createWorker('eng');
-})();
 
 function startCam() {
-  navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} } })
-    .then(s => { stream = s; video.srcObject = s; snapBtn.style.display='block'; controls.style.display='none'; })
-    .catch(e => alert('Camera: ' + e.message));
+  navigator.mediaDevices.getUserMedia({ 
+    video: { facingMode:'environment', width:{ideal:1920}, height:{ideal:1080} } 
+  })
+  .then(s => { 
+    stream = s; 
+    video.srcObject = s; 
+    snapBtn.style.display = 'block'; 
+    controls.style.display = 'none'; 
+  })
+  .catch(e => alert('Camera error: ' + e.message));
 }
 
 function stopCam() {
@@ -102,10 +112,7 @@ function snap() {
   c.width = video.videoWidth;
   c.height = video.videoHeight;
   c.getContext('2d').drawImage(video, 0, 0);
-  
-  // Preprocess
-  const processed = preprocess(c);
-  capturedImage = processed.toDataURL('image/jpeg', 0.9);
+  capturedImage = c.toDataURL('image/jpeg', 0.95);
   
   previewImg.src = capturedImage;
   previewImg.style.display = 'block';
@@ -115,6 +122,7 @@ function snap() {
   retakeBtn.style.display = 'block';
   verifyBtn.disabled = false;
   result.style.display = 'none';
+  ocrInfo.style.display = 'none';
 }
 
 function retake() {
@@ -123,7 +131,6 @@ function retake() {
   capturedImage = null;
   retakeBtn.style.display = 'none';
   ocrInfo.style.display = 'none';
-  confDisplay.textContent = '';
   verifyBtn.disabled = true;
   result.style.display = 'none';
   startCam();
@@ -134,109 +141,119 @@ document.getElementById('fileInput').addEventListener('change', e => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = evt => {
-    const img = new Image();
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.width;
-      c.height = img.height;
-      c.getContext('2d').drawImage(img, 0, 0);
-      const processed = preprocess(c);
-      capturedImage = processed.toDataURL('image/jpeg', 0.9);
-      previewImg.src = capturedImage;
-      previewImg.style.display = 'block';
-      video.style.display = 'none';
-      controls.style.display = 'none';
-      retakeBtn.style.display = 'block';
-      verifyBtn.disabled = false;
-    };
-    img.src = evt.target.result;
+    capturedImage = evt.target.result;
+    previewImg.src = capturedImage;
+    previewImg.style.display = 'block';
+    video.style.display = 'none';
+    controls.style.display = 'none';
+    retakeBtn.style.display = 'block';
+    verifyBtn.disabled = false;
+    result.style.display = 'none';
   };
   reader.readAsDataURL(file);
 });
 
-// ===== PREPROCESSING - CRITICAL FOR ACCURACY =====
-function preprocess(source) {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = source.width;
-  canvas.height = source.height;
-  ctx.drawImage(source, 0, 0);
-  
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const d = imgData.data;
-  
-  // Grayscale + aggressive contrast
-  for (let i = 0; i < d.length; i += 4) {
-    const gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-    // Threshold at 140: dark becomes black, light becomes white
-    const val = gray > 140 ? 255 : 0;
-    d[i] = d[i+1] = d[i+2] = val;
-  }
-  
-  ctx.putImageData(imgData, 0, 0);
-  return canvas;
-}
-
-// ===== VERIFY =====
 async function verify() {
   if (!capturedImage) return alert('Take photo first');
-  if (!document.getElementById('partInput').value.trim()) return alert('Enter part number first');
+  const inputVal = document.getElementById('partInput').value.trim().toUpperCase();
+  if (!inputVal) return alert('Enter part number first');
+  
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) return alert('Paste OCR.space API key first');
   
   verifyBtn.disabled = true;
-  result.className = 'result warn';
-  result.textContent = '🔍 Reading...';
+  result.className = 'result loading';
+  result.innerHTML = '🤖 AI reading photo...<br><small>Sending to OCR.space</small>';
   result.style.display = 'block';
   
   try {
-    const { data } = await worker.recognize(capturedImage, undefined, {
-      tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-',
-      tessedit_pageseg_mode: '7' // Single uniform block of text
+    const formData = new FormData();
+    formData.append('base64Image', capturedImage);
+    formData.append('language', 'eng');
+    formData.append('isOverlayRequired', 'false');
+    formData.append('scale', 'true');
+    formData.append('OCREngine', '2'); // Engine 2 = more accurate
+    
+    const res = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      headers: { 'apikey': apiKey },
+      body: formData
     });
     
-    const raw = data.text.trim();
-    const clean = cleanText(raw);
-    const input = cleanText(document.getElementById('partInput').value);
-    lastConfidence = data.confidence;
+    const data = await res.json();
     
-    ocrInfo.innerHTML = `<strong>OCR:</strong> ${escapeHtml(raw)}<br><strong>Clean:</strong> ${escapeHtml(clean)}<br><strong>Input:</strong> ${escapeHtml(input)}`;
-    ocrInfo.style.display = 'block';
-    confDisplay.textContent = `Confidence: ${data.confidence.toFixed(1)}%`;
-    
-    // If confidence is low, warn but still check
-    if (data.confidence < 75) {
-      result.className = 'result warn';
-      result.innerHTML = `⚠️ LOW CONFIDENCE (${data.confidence.toFixed(0)}%)<br>Check manually`;
-      verifyBtn.disabled = false;
-      return;
+    if (data.IsErroredOnProcessing) {
+      throw new Error(data.ErrorMessage || 'OCR failed');
     }
     
-    const match = (clean === input) || clean.includes(input) || input.includes(clean);
+    const parsed = data.ParsedResults?.[0];
+    if (!parsed) throw new Error('No text detected');
+    
+    const raw = parsed.ParsedText || '';
+    const conf = parseFloat(parsed.TextOverlay?.Lines?.[0]?.Words?.[0]?.Confidence) || 
+                 parsed.TextOverlay?.Lines?.[0]?.MaxHeight || 0);
+    
+    // Clean for part number matching
+    const clean = raw.toUpperCase()
+      .replace(/[^A-Z0-9\-]/g, '')
+      .replace(/O/g, '0')
+      .replace(/I/g, '1')
+      .replace(/L/g, '1')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8')
+      .trim();
+    
+    const confClass = conf > 80 ? 'conf-high' : 'conf-low';
+    const confText = conf > 80 ? 'HIGH' : 'LOW';
+    
+    ocrInfo.innerHTML = `
+      <strong>AI Raw:</strong> ${escapeHtml(raw)}<br>
+      <strong>Cleaned:</strong> ${escapeHtml(clean)}<br>
+      <strong>Input:</strong> ${escapeHtml(inputVal)}<br>
+      <strong>Confidence:</strong> <span class="conf-badge ${confClass}">${confText} ${conf}%</span>
+    `;
+    ocrInfo.style.display = 'block';
+    
+    // Match logic
+    const match = (clean === inputVal) || 
+                  clean.includes(inputVal) || 
+                  inputVal.includes(clean) ||
+                  similarity(clean, inputVal) > 0.85;
     
     if (match) {
       result.className = 'result ok';
-      result.innerHTML = `✅ MATCH<br><small>${escapeHtml(input)}</small>`;
+      result.innerHTML = `✅ MATCH<br><small>${escapeHtml(inputVal)}</small>`;
       beep('ok');
     } else {
       result.className = 'result fail';
-      result.innerHTML = `❌ MISMATCH<br><small>Expected: ${escapeHtml(input)}<br>Found: ${escapeHtml(clean)}</small>`;
+      result.innerHTML = `❌ MISMATCH<br><small>Expected: ${escapeHtml(inputVal)}<br>Found: ${escapeHtml(clean)}</small>`;
       beep('fail');
     }
+    
   } catch (err) {
     result.className = 'result fail';
-    result.textContent = 'Error: ' + err.message;
+    result.innerHTML = '❌ Error<br><small>' + escapeHtml(err.message) + '</small>';
   }
   verifyBtn.disabled = false;
 }
 
-function cleanText(s) {
-  return s.toUpperCase()
-    .replace(/[^0-9A-Z\-]/g, '')
-    .replace(/O/g, '0')
-    .replace(/I/g, '1')
-    .replace(/L/g, '1')
-    .replace(/S/g, '5')
-    .replace(/B/g, '8')
-    .trim();
+function similarity(a, b) {
+  if (a === b) return 1;
+  const longer = a.length > b.length ? a : b;
+  const shorter = a.length > b.length ? b : a;
+  if (longer.length === 0) return 1;
+  const costs = [];
+  for (let i = 0; i <= shorter.length; i++) costs[i] = i;
+  for (let i = 1; i <= longer.length; i++) {
+    let nw = costs[0];
+    costs[0] = i;
+    for (let j = 1; j <= shorter.length; j++) {
+      const cj = Math.min(1 + Math.min(costs[j], costs[j-1]), longer[i-1] === shorter[j-1] ? nw : nw + 1);
+      nw = costs[j];
+      costs[j] = cj;
+    }
+  }
+  return (longer.length - costs[shorter.length]) / longer.length;
 }
 
 function escapeHtml(t) {
@@ -257,7 +274,8 @@ function beep(type) {
   } catch(e){}
 }
 
-window.addEventListener('beforeunload', () => { stopCam(); if(worker) worker.terminate(); });
+window.addEventListener('beforeunload', () => stopCam());
 </script>
+
 </body>
 </html>
